@@ -99,7 +99,12 @@ From five real samples now committed under [`../../example_breakdowns/`](../../e
   not verified shipped behavior. The agent must **classify draft vs canonical and surface
   contradictions**, never silently merge.
 - **COGS is a cross-cutting system** referenced by every puzzle → validates **system/component
-  articles** over 1:1 file mirroring.
+  articles** over 1:1 file mirroring. Drafting it also surfaced two things the roadmap should
+  note: (a) the corpus documents the puzzle↔COGS *interface* but **never documents COGS
+  itself** (what it is, how the room is operated/reset through it) — a large gap; and (b) a
+  **safety-critical open question** — whether COGS drives any life-safety hardware (door
+  releases, maglocks). If it does, that is the installation's highest-stakes system and its
+  documentation gap matters most.
 - **Version-fragility is structural** (pin maps/line numbers pinned to firmware builds) →
   provenance + **staleness triggers** are not optional.
 - Practical note: naive `.docx` text extraction **mangles ASCII state diagrams and code
@@ -128,6 +133,7 @@ From five real samples now committed under [`../../example_breakdowns/`](../../e
   operational corpus).
 - `docs/vision/examples/payphone-canonical-article.md` — prototype canonical article (single clean source).
 - `docs/vision/examples/lasermaze-canonical-article.md` — prototype canonical article (three-source reconciliation).
+- `docs/vision/examples/system-cogs-canonical-article.md` — prototype **system** article (vs. puzzle); documents the puzzle↔COGS integration contract and flags COGS-itself as a corpus gap.
 - `docs/vision/templates/puzzle-article-template.md` — reusable fill-in template generalising both examples.
 - `docs/vision/templates/puzzle-authoring-prompt.md` — authoring-agent prompt (the trust contract as a procedure).
 - This feedback doc.
