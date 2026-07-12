@@ -107,17 +107,29 @@ From five real samples now committed under [`../../example_breakdowns/`](../../e
 
 ## First vertical slice
 
-- **Payphone first** to define/validate the shape — a prototype draft now exists at
+- **Payphone** (done) — prototype at
   [`examples/payphone-canonical-article.md`](examples/payphone-canonical-article.md),
-  authored from the real v7 breakdown with the operator layer inferred and gaps flagged.
-- **Laser Maze second** as the reconciliation stress test (three overlapping sources).
+  authored from the real v7 breakdown; operator layer inferred, gaps flagged.
+- **Laser Maze** (done) — prototype at
+  [`examples/lasermaze-canonical-article.md`](examples/lasermaze-canonical-article.md).
+  This was the reconciliation stress test across three disagreeing sources, and the shape
+  held. Headline finding: `Vibe_Coding_Notes` describes a **Mode B mirror sequence that
+  contradicts the v52 firmware** (skips encoder 4; firmware uses all 9). Treating the vibe
+  notes as truth would have published a wrong solution — the tier model (current /
+  supporting / draft-intent) plus a contradictions log is what prevents that. Confirms the
+  agent must classify sources by tier and surface conflicts, never merge them silently.
 - Real source samples for both are in `example_breakdowns/`.
+- A reusable **article template** and an **authoring-agent prompt** now exist (see below),
+  ready to drive the same process over the full corpus once Drive access is wired.
 
 ## Artifacts produced this session
 
 - `example_breakdowns/` — five real corpus samples + README (reference material; **not** the
   operational corpus).
-- `docs/vision/examples/payphone-canonical-article.md` — prototype canonical article.
+- `docs/vision/examples/payphone-canonical-article.md` — prototype canonical article (single clean source).
+- `docs/vision/examples/lasermaze-canonical-article.md` — prototype canonical article (three-source reconciliation).
+- `docs/vision/templates/puzzle-article-template.md` — reusable fill-in template generalising both examples.
+- `docs/vision/templates/puzzle-authoring-prompt.md` — authoring-agent prompt (the trust contract as a procedure).
 - This feedback doc.
 
 ## Suggested roadmap deltas vs. the current draft
