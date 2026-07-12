@@ -1,7 +1,7 @@
 ---
 # ─────────────────────────────────────────────────────────────────────────────
 # Puzzle article template  (Orbot canonical service manual)
-# Copy this file to orbot-wiki/docs/puzzles/<slug>.md and fill it in.
+# Copy this file to hi-orbit-wiki/docs/puzzles/<slug>.md and fill it in.
 # Delete the guidance comments (<!-- ... -->) as you complete each part.
 # Two worked examples: docs/vision/examples/{payphone,lasermaze}-canonical-article.md
 # ─────────────────────────────────────────────────────────────────────────────

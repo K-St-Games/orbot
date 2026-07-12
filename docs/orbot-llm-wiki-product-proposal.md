@@ -245,12 +245,12 @@ orbot/
 ├── cortex/
 ├── compose/
 ├── playbooks/
-└── wiki/                  # separate Git repository, linked into Orbot
+└── hi-orbit-wiki/         # separate Git repository, linked into Orbot
 ```
 
 ### Preferred implementation
 
-Treat `orbot/wiki/` as a separate Git repository and link it into the parent Orbot repository as a **Git submodule**.
+Treat `orbot/hi-orbit-wiki/` as a separate Git repository and link it into the parent Orbot repository as a **Git submodule**.
 
 This preserves:
 
@@ -267,7 +267,7 @@ The resulting relationship is:
 
 ```text
 Orbot repo
-    └── wiki/  → pinned commit of dedicated Orbot Wiki repo
+    └── hi-orbit-wiki/  → pinned commit of the dedicated Hi-Orbit Wiki repo
 ```
 
 The wiki should still be considered a first-class Orbot subsystem, not an unrelated side project.
@@ -279,7 +279,7 @@ A Git subtree could also work, but the submodule model better matches the goal o
 ## 7. Proposed Wiki Repository Structure
 
 ```text
-orbot-wiki/
+hi-orbit-wiki/
 │
 ├── README.md
 ├── AGENTS.md
@@ -881,8 +881,8 @@ This should be implemented as an architectural evolution rather than a rewrite.
 
 ### Phase 1 — Establish the wiki repository
 
-- Create dedicated `orbot-wiki` repository.
-- Add it to Orbot at `wiki/` as a submodule.
+- Create the dedicated `hi-orbit-wiki` repository.
+- Add it to Orbot at `hi-orbit-wiki/` as a submodule.
 - Add `AGENTS.md`, `mkdocs.yml`, directory structure, schemas, and templates.
 - Define document types and frontmatter conventions.
 
@@ -949,9 +949,9 @@ The initial wiki phase should be considered successful when:
 
 The agent managing the Orbot repository should make or formalize the following decisions before implementation:
 
-1. **Repository integration:** Git submodule at `orbot/wiki/` unless a strong repo-management constraint favors subtree.
-2. **Canonical content root:** `wiki/docs/`.
-3. **Evidence root:** `wiki/evidence/`.
+1. **Repository integration:** Git submodule at `orbot/hi-orbit-wiki/` unless a strong repo-management constraint favors subtree.
+2. **Canonical content root:** `hi-orbit-wiki/docs/`.
+3. **Evidence root:** `hi-orbit-wiki/evidence/`.
 4. **Publishing engine:** MkDocs initially.
 5. **Primary article types:** room, puzzle, system, component, procedure, troubleshooting-guide, reference.
 6. **Review rule:** substantive operational changes require human review initially.
@@ -969,7 +969,7 @@ The first implementation should be intentionally narrow and demonstrative.
 ### Deliverables
 
 - Create the standalone wiki repository.
-- Link it into Orbot at `wiki/`.
+- Link it into Orbot at `hi-orbit-wiki/`.
 - Add the proposed directory structure.
 - Add root `AGENTS.md`.
 - Add puzzle article template.

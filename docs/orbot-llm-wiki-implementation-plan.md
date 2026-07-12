@@ -1,5 +1,10 @@
 # Orbot LLM Wiki — Implementation Plan (Scaffolding + Cortex Fix)
 
+> **Historical plan:** do not execute this document verbatim. `hi-orbit-wiki/` now exists
+> as a submodule, the product vision has been approved and refined, and the forthcoming
+> `MVP_ROADMAP.md` will re-sequence this work with explicit contracts and gates. See
+> [`../CURRENT_TASK.md`](../CURRENT_TASK.md).
+
 ## Context
 
 `docs/orbot-llm-wiki-product-proposal.md` proposes evolving Orbot from a plain RAG
@@ -20,8 +25,9 @@ Grounding the proposal against actual repo state surfaced two things that reshap
    768-dim) and isn't wired into Hermes at all (`config.yaml` has no `mcp_servers:` key).
    Confirmed with user: fix this now, as part of this pass.
 
-No `gh` CLI / token in this environment (same limitation as the earlier repo-rename work)
-— the new `orbot-wiki` repo gets built and committed locally; the user pushes it.
+At the time this plan was written, the environment had no authenticated `gh` session, so
+the proposed `hi-orbit-wiki` repository was to be built and committed locally for the user
+to push. The repository and submodule now exist.
 
 **Outcome of this pass:** a scaffolded, empty wiki repo ready to receive real content the
 moment it lands in Drive, and a Cortex stack that's correctly pointed, correctly embedded,
@@ -30,15 +36,15 @@ real operational data.
 
 ---
 
-## Track A — `orbot-wiki` standalone repo (new, sibling to `orbot/`)
+## Track A — `hi-orbit-wiki` standalone repo (now linked as a submodule)
 
-Build at `/home/code/orbot-wiki`, independent `git init`, matching how `orbot` itself was
-built (local repo, ready to push, no fake submodule wiring against a local path).
+This track described building an independent `hi-orbit-wiki` repository. It now exists
+and is linked at the parent repository's `hi-orbit-wiki/` path.
 
 Structure (trimmed from proposal §7 — no content files, just navigable scaffolding):
 
 ```
-orbot-wiki/
+hi-orbit-wiki/
 ├── README.md                       # what this repo is, how it relates to orbot/
 ├── AGENTS.md                       # wiki constitution — proposal §12, verbatim rules
 ├── mkdocs.yml                      # nav skeleton, material theme
@@ -116,10 +122,9 @@ Notes:
   `ollama-warmup` service that runs `ollama pull nomic-embed-text`, mirroring the
   existing `rclone-warmup` pattern in `single-compose/docker-compose.yml`.
 - Remove the hardcoded `/home/damien/code/shared/gdrive_kst/Lonnie/Empirical
-  Neoshamanism` bind mount. Replace with `${DOCS_MOUNT_PATH:-../orbot-wiki/docs}` and
-  `${EVIDENCE_MOUNT_PATH:-../orbot-wiki/evidence}` — points at the sibling repo from
-  Track A today; the plan file documents changing these to `../wiki/docs` /
-  `../wiki/evidence` once the user adds `orbot-wiki` as a submodule at `orbot/wiki/`.
+  Neoshamanism` bind mount. Replace with `${DOCS_MOUNT_PATH:-../hi-orbit-wiki/docs}` and
+  `${EVIDENCE_MOUNT_PATH:-../hi-orbit-wiki/evidence}` — points at the submodule from
+  `cortex/`.
 - Drop `LITELLM_URL`/`LITELLM_API_KEY` as the primary embedding path (keep as an
   optional documented fallback var, no committed key — there's no live `cortex/.env` on
   disk today, so nothing to rotate, just don't reintroduce the pattern).
@@ -169,9 +174,9 @@ exact flow; it just hasn't had a retrieval backend to call.
 
 ## Verification
 
-- `orbot-wiki/tools/check_frontmatter.py` and `check_links.py` run clean (exit 0) against
+- `hi-orbit-wiki/tools/check_frontmatter.py` and `check_links.py` run clean (exit 0) against
   `templates/` and the empty `docs/` tree.
-- `cd orbot-wiki && mkdocs build` succeeds and produces a navigable site from `docs/index.md`.
+- `cd hi-orbit-wiki && mkdocs build` succeeds and produces a navigable site from `docs/index.md`.
 - `cd orbot/cortex && docker compose --profile full up -d` — postgres, ollama (+ warmup
   pulling `nomic-embed-text`), indexer, rag-server all healthy; indexer logs "0 files to
   index" cleanly against the empty mounted dirs (no crash on empty corpus).

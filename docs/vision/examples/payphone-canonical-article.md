@@ -21,7 +21,7 @@ last_reviewed_by: null
 
 > **Prototype canonical article.** Drafted by Orbot from `PayphonePuzzle_Breakdown.docx`
 > (firmware **v7**) as a *shape example* for the vision review. In the real wiki this
-> would live at `orbot-wiki/docs/puzzles/payphone.md`.
+> would live at `hi-orbit-wiki/docs/puzzles/payphone.md`.
 >
 > **The operator-facing guidance below is authored/inferred and has not been reviewed by
 > an engineer.** Everything is tagged with its basis so a reviewer can see what came from

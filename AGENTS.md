@@ -1,62 +1,105 @@
-# Hi-Orbit Deployment — Agent Entry Point
+# Orbot — Agent Entry Point
 
-**You are a deployment/build agent.** Your job is to stand up the Hi-Orbit
-operator tech-support agent on a fresh host: a Discord-facing **Hermes** agent,
-grounded by **Cortex** retrieval over a Google Drive corpus, with **local Ollama**
-embeddings. This is operations work — standing up containers, wiring config,
-collecting secrets — **not** research or design.
+Orbot is a reusable operational-knowledge product. Hi-Orbit is its first proving
+deployment. The durable center of the product is a private, Git-versioned service manual
+with traceable evidence and repair history; Discord/Hermes is the primary MVP interface
+for surfacing that knowledge.
 
-> **Mode for this phase: "get it running."** Deploy Cortex as-is from
-> [`cortex/`](cortex/). The pilot-hardening items (especially the `min_relevance`
-> safety threshold) are tracked in [`cortex-hardening.md`](cortex-hardening.md) and
-> applied in a **later** pass — do not block first light on them. Flag them, don't
-> fix them yet, unless the human says otherwise.
+## Current phase
 
----
+The product vision is approved in direction and grounded by real Hi-Orbit corpus samples.
+The next major artifact is the tiered [`MVP_ROADMAP.md`](MVP_ROADMAP.md). Do not execute the older wiki/Cortex
+implementation plan verbatim or resume the previous deployment-only "get it running"
+mode without first reconciling the task against the vision and roadmap.
 
-## Start here (reading order)
+Complexity must be earned by observed usage. Build the smallest trustworthy vertical
+slice, verify it with real material, and defer speculative product infrastructure.
 
-1. [`architecture.md`](architecture.md) — **the** composed picture: locked decisions,
-   the container collection, the three read/write zones, the ingest pipeline. Read it
-   first and in full.
-2. [`deployment-plan.md`](deployment-plan.md) — the ordered build (host → Hermes →
-   corpus → brain → Ollama → Cortex → wire). This is your checklist.
-3. [`BUILD-KIT.md`](BUILD-KIT.md) — what's in this folder, what's vendored, and the
-   **human-gated decisions you must collect before you can finish**.
-4. [`SOUL.md`](SOUL.md) — the agent's persona + the hard safety rules it must obey.
+## Start here
 
-## What each piece is
+Read these in order before making product, architecture, or planning changes:
 
-| Path | Role in the build |
+1. [`docs/vision/VISION.md`](docs/vision/VISION.md) — durable product north star.
+2. [`CURRENT_TASK.md`](CURRENT_TASK.md) — active scope, live repo truth, and next gate.
+3. [`docs/vision/VISION_FEEDBACK.md`](docs/vision/VISION_FEEDBACK.md) — approved
+   refinements grounded in real corpus samples.
+4. [`MVP_ROADMAP.md`](MVP_ROADMAP.md) — tiered execution plan once approved.
+5. [`architecture.md`](architecture.md), [`deployment-plan.md`](deployment-plan.md), and
+   [`BUILD-KIT.md`](BUILD-KIT.md) — current deployment history and operational detail;
+   useful evidence, but not higher authority than the approved vision.
+
+## Repository boundaries
+
+| Path | Responsibility |
 |---|---|
-| [`architecture.md`](architecture.md) | Source of truth for the design. |
-| [`deployment-plan.md`](deployment-plan.md) | Step-by-step build order with verify gates. |
-| [`agent-access-recipe.md`](agent-access-recipe.md) | How Discord + workspace + rclone Drive access wire up (distilled from a live host). Includes an openclaw↔Hermes mapping — **use the Hermes side.** |
-| [`single-compose/`](single-compose/) | A runnable rclone+agent compose example to adapt. Note: it's openclaw-shaped; for Hermes follow §9 of the access recipe. |
-| [`hermes-recipe/`](hermes-recipe/) | The Hermes deployment recipe + preflight + config templates (vendored from the parent platform's v0). |
-| [`playbooks/`](playbooks/) | Components: `google-drive.md` (rclone), `rag-setup.md` (retrieval), `gdrive-markdown-brain.md` (the ingest "brain"). |
-| [`cortex/`](cortex/) | The retrieval engine **code** — postgres + indexer + rag-server compose. This is what you deploy for retrieval. |
-| [`cortex-hardening.md`](cortex-hardening.md) | Known Cortex gaps + fixes. **Later pass**, except where noted. |
-| [`corpus-plan.md`](corpus-plan.md) / [`preflight.md`](preflight.md) | Ingestion plan; per-host intake (fill the `TBD`s with the human). |
+| [`docs/vision/`](docs/vision/) | Product vision, feedback, prototypes, and content-model design. |
+| [`hi-orbit-wiki/`](hi-orbit-wiki/) | Independently versioned Hi-Orbit knowledge repository, linked as a submodule. |
+| [`cortex/`](cortex/) | Vendored retrieval starting point; not yet aligned with the approved product contracts. |
+| [`single-compose/`](single-compose/) | Current Hermes/rclone deployment scaffold and runtime integration. |
+| [`example_breakdowns/`](example_breakdowns/) | Real corpus samples for design and testing, not the operational corpus. |
+| [`playbooks/`](playbooks/) and [`hermes-recipe/`](hermes-recipe/) | Vendored or earlier operational guidance; validate assumptions before reuse. |
 
-## Ground rules
+Reusable product code and deployment tooling belong in this repository. Installation
+knowledge belongs in `hi-orbit-wiki/`. New work should isolate Hi-Orbit-specific runtime
+configuration from reusable capabilities without forcing a premature large-scale rewrite.
 
-- **Secrets never go in this repo.** Discord tokens, the rclone OAuth token, model/API
-  keys — all live in `.env` / a secrets store on the host, referenced by location only.
-  If you find a real key committed anywhere, stop and flag it (see `cortex-hardening.md`
-  #8).
-- **Read-only corpus by construction.** The Drive mount is `drive.readonly` + a
-  read-only bind. Don't give the agent write access to the design docs.
-- **Don't publish management surfaces** (rclone WebGUI, Hermes dashboard, gateway) on a
-  venue network. localhost / Tailscale only.
-- **Verify each step** against the `*Verify:*` gate in `deployment-plan.md` before moving
-  on. A `*Human gate: yes*` step needs the human to supply something (a secret, an
-  approval) — ask, don't guess.
-- **When a decision is ambiguous, ask.** The open decisions are listed in `BUILD-KIT.md`
-  §"Decisions to collect" — surface them early rather than inventing answers.
+## Product and knowledge rules
 
-## Out of scope (don't go here)
+- **Canonical first.** Reviewed Markdown under the wiki's `docs/` is the primary
+  operator-facing retrieval source.
+- **Evidence is not truth.** Source files, generated breakdowns, notes, and repair records
+  may be incomplete, stale, or contradictory. Never silently convert them into canonical
+  guidance.
+- **Physical deployment wins.** A version-stamped source describes that version; it does
+  not prove that version is deployed. Preserve source role and deployment-verification
+  state separately.
+- **No synthetic installation facts.** Do not invent procedures, repair outcomes,
+  citations, provenance, or safety classifications to make an artifact look complete.
+- **Human review is the publication gate.** Agent-authored operator procedures remain
+  drafts until an engineer approves them.
+- **Do not duplicate repair truth.** Repair/ticket writeback is deferred until stakeholders
+  choose whether GitHub, ClickUp, or another system is authoritative. The PoC may produce
+  copyable summaries but must not create a competing repair-data store.
+- **Retrieval indexes are disposable.** Durable knowledge and provenance must be
+  rebuildable without preserving a vector database.
 
-This deployment was extracted from a larger platform repo. Anything about **cartridges,
-memory reflection, the runtime experiment, or engine forks** is *not* part of standing
-up Hi-Orbit. If a vendored doc references those, ignore them. Your world is this folder.
+## MVP safety contract
+
+Role-based access control is deferred unless dogfooding demonstrates a need. Safety cannot
+be deferred:
+
+- Hazardous, unknown, uncovered, or ambiguous procedures escalate rather than instruct.
+- Safety classification must be machine-readable at the procedure or section level and
+  propagated to retrieval chunks; a document-level label alone is insufficient.
+- Missing or unknown safety classification fails closed.
+- Hazardous content may remain readable to engineers and maintenance staff in the private
+  Git repository even when the chatbot declines to walk a user through it.
+- The Google Drive corpus remains read-only by construction.
+
+## Operational and security rules
+
+- Secrets never go in this repository or `hi-orbit-wiki/`. Keep Discord tokens, rclone
+  OAuth data, model/API keys, and credentials in runtime `.env` files or a secrets store.
+- Do not publish management surfaces such as rclone WebGUI, the Hermes dashboard, the
+  gateway, Cortex, or Postgres to a venue network. Use localhost or a private network.
+- Preserve the wiki submodule boundary. Commit knowledge changes inside
+  `hi-orbit-wiki/`, push them there, then update the parent gitlink deliberately.
+- A human-gated step requires the human's secret, approval, source material, or operational
+  verification. Ask rather than guessing.
+
+## Working method
+
+1. Read the governing docs and inspect both parent and submodule status.
+2. Confirm the requested scope against `CURRENT_TASK.md` and the vision.
+3. Use real corpus samples for content or retrieval claims.
+4. Keep changes bounded to the current roadmap tier; name explicit non-goals.
+5. Add deterministic verification before claiming a safety, retrieval, or migration gate.
+6. Update `CURRENT_TASK.md` when the active scope or handoff truth changes.
+
+## Still out of scope
+
+Hardware actuation, autonomous safety-critical decisions, custom authentication,
+multi-installation tenancy, role-specific experiences, and ticketing integrations are not
+MVP requirements unless the roadmap is explicitly revised by the human owner. Vendored
+references to cartridges, memory reflection, runtime experiments, or engine forks are not
+part of Orbot's current product scope.

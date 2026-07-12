@@ -1,16 +1,21 @@
 # Vision Feedback — Owner Review
 
 **Date:** 2026-07-12
-**For:** the agent maintaining Orbot's vision and authoring `ROADMAP.md`
+**For:** the agent maintaining Orbot's vision and authoring `MVP_ROADMAP.md`
 **From:** human owner review session
 **Re:** [`VISION.md`](VISION.md) and [`../../CURRENT_TASK.md`](../../CURRENT_TASK.md)
 
 ## Status
 
+> **Subsequent owner refinement:** repair-log or ticket writeback is not required in the
+> PoC. Stakeholders will choose a single repair-data system of record before that feature
+> is planned. The reconciled vision and `MVP_ROADMAP.md` supersede the repair-log language
+> preserved below from this review session.
+
 The vision is **approved in direction** — no part was rejected. The owner engaged with
 product identity, the evidence/retrieval model, the safety model, and the Discord role.
 This review produced **confirmations, refinements, and newly-surfaced corpus realities**
-to fold into `ROADMAP.md` and the doc reconciliation, plus two concrete artifacts to
+to fold into `MVP_ROADMAP.md` and the doc reconciliation, plus two concrete artifacts to
 ground the first vertical slice (real corpus samples + a prototype canonical article).
 
 ## Decisions confirmed / refined

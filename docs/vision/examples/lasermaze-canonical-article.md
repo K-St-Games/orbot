@@ -26,7 +26,7 @@ last_reviewed_by: null
 # Laser Maze
 
 > **Prototype canonical article.** Drafted by Orbot from three overlapping source
-> documents. In the real wiki this would live at `orbot-wiki/docs/puzzles/laser-maze.md`.
+> documents. In the real wiki this would live at `hi-orbit-wiki/docs/puzzles/laser-maze.md`.
 >
 > **Operator-facing guidance is authored/inferred and unreviewed.** Basis tags:
 > **[source v52]** (from the version-stamped breakdown) · **[authored — review]** ·

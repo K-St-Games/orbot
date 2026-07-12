@@ -1,8 +1,8 @@
 # Orbot Product Vision
 
-**Status:** Draft for review
+**Status:** Approved in direction — reconciled after owner review
 
-**Last updated:** 2026-07-11
+**Last updated:** 2026-07-12
 
 **Scope:** Durable product direction for Orbot and its first deployment at Hi-Orbit
 
@@ -106,10 +106,18 @@ wrong or out of date.
 
 ### Source evidence
 
-Google Drive remains the long-term home of original source material: drawings, PDFs,
-Word documents, images, manuals, and engineering notes. Orbot reads this corpus without
-modifying it. Normalized evidence preserves stable identity, provenance, page or section
-references, checksums, and extraction warnings.
+Google Drive remains the long-term collection point for original source material:
+drawings, PDFs, Word documents, images, manuals, and engineering notes. Orbot reads this
+corpus without modifying it. Some Drive documents are themselves derived artifacts. The
+sampled puzzle breakdowns, for example, were generated from firmware, so the firmware
+version or source commit is the closer evidence root even when the breakdown is the
+available corpus file.
+
+The MVP does not require a comprehensive source-shaped Markdown mirror or evidence-search
+tier. It does require minimum durable provenance: stable source identity, original path or
+URL, source role, checksum, described firmware/build when known, ingestion date, and
+extraction warnings. Reviewed image and diagram captions must also persist because a model
+caption is an inference rather than raw evidence.
 
 ### Canonical service manual
 
@@ -118,11 +126,30 @@ It is organized around rooms, puzzles, systems, components, procedures, and
 troubleshooting needs rather than mirroring source filenames. It is maintained in
 Markdown, reviewed through Git, and usable directly by humans.
 
-### Repair log
+Canonical articles use different depths in one document rather than separate documents
+for each audience:
 
-Repair records live alongside, but not inside, the canonical service manual. They capture
-symptoms, investigation, resolution, and follow-up questions. Repair history can suggest
-documentation changes, but it does not automatically become approved guidance.
+- **Operator:** summary, player interaction, healthy behavior, symptom-driven
+  troubleshooting, reset/recovery, and when to escalate.
+- **Maintenance:** mechanism, components and wiring, dependencies, reference values,
+  known quirks, and approved manual overrides.
+- **Engineering:** version-fragile tunables, data formats, detailed provenance, open
+  questions, and contradictions.
+
+The operator band is usually authored from engineering evidence rather than directly
+extracted. That makes it the primary human-review surface: agent-authored procedures stay
+drafts until an engineer confirms that they are correct and safe.
+
+### Repair and ticket history
+
+Operational repair history should have one authoritative home. Whether that is the wiki,
+ClickUp, or another system remains a stakeholder decision. The wiki reserves a `repairs/`
+boundary, but repair-log or ticket writeback is not required for the first proof of
+concept and should not create a competing source of truth.
+
+Once the authoritative workflow is chosen, repair records can capture symptoms,
+investigation, resolution, and follow-up questions and can suggest documentation changes.
+They still do not automatically become approved canonical guidance.
 
 ### Drafts and governance state
 
@@ -131,9 +158,34 @@ documentation-health information remain visible until a human resolves or approv
 
 ### Retrieval index
 
-Cortex or a successor retrieval service indexes durable Markdown knowledge. Its database
-is disposable and must be fully rebuildable from the knowledge repository. Retrieval
-results preserve enough identity and provenance for a person to verify an answer.
+Cortex or a successor retrieval service indexes durable Markdown knowledge. Reviewed,
+current canonical documentation is the primary operator-facing retrieval source. Drafts,
+repair records, and raw or normalized evidence do not become settled operator guidance
+merely because they are semantically relevant.
+
+The retrieval database is disposable and must be fully rebuildable from the knowledge
+repository. Results preserve enough identity and provenance for a person to verify an
+answer. Whether a richer normalized evidence layer should also be indexed remains an open
+decision gated on access to, and inspection of, the real Google Drive corpus.
+
+### Metadata semantics
+
+The roadmap must define one small, coherent schema before retrieval or validation code is
+changed. At minimum it keeps these concepts distinct:
+
+- **publication lifecycle:** draft, current, or superseded;
+- **source role:** firmware/source code, generated breakdown, supporting reference, or
+  draft intent;
+- **verification state:** unverified, source-verified, deployment-verified, or disputed;
+- **described build:** firmware version, commit, or hash when known;
+- **safety classification:** machine-readable at procedure or section level, with unknown
+  values failing closed;
+- **content classification:** internal or otherwise sensitive content, without implying
+  that a custom role system exists in the MVP.
+
+A generated, version-stamped document can be the best available description of a build,
+but it does not prove that build is installed. The physical installation and
+engineer-confirmed deployed configuration remain the highest authority.
 
 ## Core product experience
 
@@ -150,7 +202,10 @@ follows:
 6. It refuses to guess when documentation is insufficient or the requested action is
    unsafe.
 7. It produces a useful escalation summary when engineering help is required.
-8. After resolution, it records what was observed and what worked in the repair log.
+8. After stakeholders choose the repair/ticket system of record, a later iteration may
+   record actual incidents there and propose documentation improvements when they expose
+   new facts or gaps. Routine questions already answered by current documentation do not
+   need to create repository noise.
 
 ### Human-readable documentation remains first class
 
@@ -181,10 +236,14 @@ Trustworthy operational support matters more than answering every question.
   into verified fact.
 - Inferences and unresolved observations remain clearly labeled until reviewed.
 - Unsafe, uncovered, or ambiguous procedures escalate rather than inviting improvisation.
+- Safety behavior is driven by parseable procedure- or section-level metadata propagated
+  to retrieval chunks; a document-level warning alone is not sufficient.
+- Missing or unknown safety classification fails closed. Hazardous content can remain
+  readable in the private repository while the chatbot declines to instruct on it.
 - Canonical operational changes require human review during the MVP.
 - The source corpus remains read-only by construction.
-- The documentation repository, repair log, and disposable retrieval index remain
-  distinguishable.
+- The documentation repository, any chosen repair/ticket record, and the disposable
+  retrieval index remain distinguishable.
 
 Role-based retrieval and fine-grained content restrictions are expected future
 capabilities, not prerequisites for initial dogfooding. The MVP should nevertheless be
@@ -201,10 +260,12 @@ The MVP should include:
 
 - A private, independently versioned Hi-Orbit knowledge repository.
 - A canonical Markdown service manual with traceable source evidence.
-- A separate repair log and draft/review workflow.
+- A draft/review workflow for canonical documentation and an explicit stakeholder decision
+  about the authoritative repair/ticket system before automated writeback is added.
 - Read-only ingestion from the Google Drive source corpus.
 - Retrieval over current canonical knowledge with citations and a no-guess escalation
   path.
+- Machine-enforced behavioral safety gating for hazardous or unknown procedures.
 - A Discord agent that supports focused troubleshooting threads.
 - Human review of substantive canonical changes through GitHub.
 - A deployment that can run on a VPS or an onsite host without changing the product's
@@ -230,6 +291,11 @@ mixed source files
 This is the first meaningful product proof. Empty scaffolding can enable it, but does not
 by itself validate the product.
 
+The Payphone and Laser Maze sample articles validate the proposed content shape, but they
+remain unreviewed drafts rather than completed product vertical slices. Payphone should be
+the first complete end-to-end slice because it has one relatively clean source. Laser Maze
+should follow as the multi-source contradiction and reconciliation stress test.
+
 ## Product and repository boundaries
 
 Orbot should separate reusable product code from installation knowledge and configuration.
@@ -243,7 +309,7 @@ orbot/                         # reusable product and deployment framework
 └── deployments/
     └── hi-orbit/              # installation-specific configuration
 
-orbot-wiki/                    # private Hi-Orbit knowledge repository
+hi-orbit-wiki/                 # private Hi-Orbit knowledge repository
 ├── docs/                      # canonical service manual
 ├── evidence/                  # normalized source evidence
 ├── repairs/                   # incident and resolution records
@@ -293,6 +359,8 @@ Complexity must be earned by observed usage. Before adding a capability, ask:
 - Role-specific conversational experiences.
 - Automatic merging of substantive operational changes.
 - Full automatic reconciliation of contradictory evidence.
+- A comprehensive normalized evidence mirror or evidence-search tier before the real
+  Google Drive corpus has been inspected.
 - Public publication of sensitive service documentation.
 - Multi-installation tenancy.
 - ClickUp or other ticket-system integration.
@@ -335,9 +403,11 @@ visible when:
 
 The roadmap should advance through small capability tiers with explicit exit gates:
 
-1. Establish durable boundaries and trust contracts.
-2. Prove one real puzzle end to end.
-3. Reach a dependable Hi-Orbit operational-support MVP.
+1. Reconcile governing documentation and establish durable boundaries, metadata, and
+   trust contracts.
+2. Prove Payphone end to end with real evidence and human review.
+3. Use Laser Maze to stress-test contradiction handling while expanding toward a
+   dependable Hi-Orbit operational-support MVP.
 4. Improve knowledge stewardship based on dogfooding.
 5. Harden reliability, security, and deployment repeatability.
 6. Productize for further deployments only after the first installation demonstrates

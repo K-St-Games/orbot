@@ -31,7 +31,7 @@ last_reviewed_by: null
 # COGS (room control system)
 
 > **Prototype canonical article — system type.** In the real wiki this would live at
-> `orbot-wiki/docs/systems/cogs.md`. Basis tags: **[source]** from a puzzle breakdown ·
+> `hi-orbit-wiki/docs/systems/cogs.md`. Basis tags: **[source]** from a puzzle breakdown ·
 > **[authored — review]** inferred · **[gap]** not in the corpus · **[safety]**.
 
 ## Scope of this article  ⚠ read first
