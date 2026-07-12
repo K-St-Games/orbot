@@ -1,6 +1,6 @@
 # Current Task
 
-**Status:** In progress — review and approve the MVP roadmap
+**Status:** In progress — roadmap review and private wiki host smoke test
 
 **Last updated:** 2026-07-12
 
@@ -137,6 +137,16 @@ Every tier should identify:
 - Root `AGENTS.md` now reflects the approved product phase. README, SOUL, architecture,
   deployment-plan, and BUILD-KIT still contain older deployment-only framing and should be
   reconciled in the roadmap before they are treated as current product authority.
+- A private MkDocs frontend now builds only the wiki's reviewed canonical `docs/` tree and
+  runs as `wiki-site` in `single-compose`, exposed on host port 8120 by default. The current
+  canonical tree contains only its placeholder index; all installation articles remain
+  unreviewed drafts.
+- The wiki templates and root authoring templates now share metadata schema v0.1. Existing
+  article drafts predate that schema and must be reconciled before review or promotion.
+- The canonical MkDocs tree passes a strict local build with pinned Material for MkDocs
+  9.7.6. Docker remains unavailable in this development checkout, so the image build,
+  resolved Compose configuration, HTTP response, and container logs require validation
+  on the deployment host before the frontend is considered operational.
 
 ## Findings the roadmap must absorb
 
@@ -179,6 +189,7 @@ rather than allowing the MVP to claim safety or completeness that has not been v
 
 ## Immediate next action
 
-Review root `MVP_ROADMAP.md`. Do not begin implementation until the owner and engineering
-lead approve its placement of content authoring, retrieval selection, Drive integration,
-Hermes, safety, migration, and dogfood gates.
+On the deployment host, pull the parent repository and its recorded wiki submodule,
+validate the Compose configuration, build and start `wiki-site`, and confirm its HTTP
+response and logs. Then resume review of root `MVP_ROADMAP.md`; do not begin retrieval or
+content-promotion implementation until the owner and engineering lead approve its gates.

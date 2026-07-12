@@ -213,9 +213,11 @@ For the MVP, the private GitHub repository itself is an acceptable documentation
 interface. GitHub provides private access, history, review, and Markdown rendering
 without requiring Orbot to build an authentication system.
 
-MkDocs can validate and preview a professional documentation site locally. Private site
-hosting can be added later when it removes real usage friction. Sensitive service
-information should not be published through an unauthenticated public site.
+MkDocs validates and renders the current private documentation frontend. The Git
+repository remains the source of truth, and the generated static site contains only the
+reviewed canonical `docs/` tree. Host networking and access controls remain deployment
+responsibilities; sensitive service information must not be exposed through an
+unauthenticated public site.
 
 ### Engineers curate canonical knowledge through Git
 

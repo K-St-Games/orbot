@@ -1,0 +1,9 @@
+# The only root-context image is the private MkDocs site. Keep the build
+# context limited to its Dockerfile and the reviewed canonical wiki content.
+*
+!hi-orbit-wiki/
+!hi-orbit-wiki/mkdocs.yml
+!hi-orbit-wiki/docs/
+!hi-orbit-wiki/docs/**
+!wiki-site/
+!wiki-site/Dockerfile

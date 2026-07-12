@@ -62,7 +62,7 @@ These are means, not product requirements:
 - vector-only, keyword, or hybrid ranking;
 - Ollama or a different embedding provider;
 - the exact Markdown validation and ingestion packages;
-- MkDocs or another future private documentation frontend.
+- MkDocs, the current PoC documentation frontend, or a future replacement.
 
 A replacement must beat the existing option against the roadmap contracts. Do not swap
 components merely because another package exists.
