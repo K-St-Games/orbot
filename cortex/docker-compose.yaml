@@ -1,0 +1,77 @@
+services:
+  # PostgreSQL with pgvector for embeddings storage
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cortex-pgvector
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cortex}
+      POSTGRES_USER: ${POSTGRES_USER:-cortex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cortex}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cortex} -d ${POSTGRES_DB:-cortex}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cortex-network
+
+  # RAG MCP Server - queries pgvector and exposes MCP interface
+  rag-server:
+    build:
+      context: ./rag-server
+      dockerfile: Dockerfile
+    container_name: cortex-rag-server
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:-cortex}@postgres:5432/${POSTGRES_DB:-cortex}
+      OLLAMA_URL: ${OLLAMA_URL:-http://100.92.38.43:11434}
+      LITELLM_URL: ${LITELLM_URL:-http://100.67.191.114:4000}
+    ports:
+      - "${RAG_SERVER_PORT:-8100}:8100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cortex-network
+    profiles:
+      - full
+
+  # Indexer Service - reads markdown files and populates pgvector
+  indexer:
+    build:
+      context: ./indexer
+      dockerfile: Dockerfile
+    container_name: cortex-indexer
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:-cortex}@postgres:5432/${POSTGRES_DB:-cortex}
+      OLLAMA_URL: ${OLLAMA_URL:-http://100.92.38.43:11434}
+      OBSIDIAN_PATH: /data/obsidian
+    volumes:
+      - /home/damien/code/shared/gdrive_kst/Lonnie/Empirical Neoshamanism:/data/obsidian:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cortex-network
+    profiles:
+      - full
+
+volumes:
+  pgvector_data:
+    driver: local
+
+networks:
+  cortex-network:
+    driver: bridge

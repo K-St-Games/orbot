@@ -1,0 +1,154 @@
+# =============================================================================
+# docker-compose.yaml.example — full-stack deployment template (proposal)
+# =============================================================================
+# Companion to .env.example. Profiled so each deployment runs only what it needs:
+#
+#   docker compose up -d                                  # agent only (gateway+dashboard)
+#   docker compose --profile rag up -d                   # + vector store + RAG search
+#   docker compose --profile gdrive --profile brain up -d # + Drive mount + brain refresh
+#
+# MODEL BACKEND: these deployments connect DIRECTLY to OpenRouter
+# (https://openrouter.ai/api/v1, OpenAI-compatible) — no local model-proxy service.
+# The model base_url/key live in config.yaml + .env (see .env.example).
+#
+# RELATIONSHIP TO THE OTHER COMPOSE FILE:
+#   - docker-compose.yml      = the minimal, KNOWN-GOOD Hermes-only deployment (v0).
+#   - docker-compose.yaml.example (this) = forward-looking multi-service template.
+#     Services marked [BUILD: TBD] reference components we haven't built yet
+#     (rag-mcp, brain) — they're placeholders to design against, not runnable as-is.
+#
+# NETWORKING: every service uses `network_mode: host` to match the captured Hermes
+# deployment, so services talk to each other over 127.0.0.1:<port> (NOT service
+# names). Trade-off: you manage port collisions yourself. To use service-name DNS
+# instead, drop `network_mode: host` from ALL services, add them to a shared
+# `networks:` bridge, and change 127.0.0.1 references to service names — but note the
+# Hermes gateway/dashboard were validated under host networking.
+#
+# SECRETS: values come from .env (see .env.example). Never inline real secrets here.
+# =============================================================================
+
+services:
+
+  # ---- Agent runtime (always) ----------------------------------------------
+  gateway:
+    build: .
+    image: hermes-agent
+    container_name: hermes
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ../bot_memory/agent5/.hermes:/opt/data
+      # CRITICAL init-hook patch (see deploy-hermes-agent.md Step 5).
+      - ../bot_memory/agent5/stage2-hook.sh:/opt/hermes/docker/stage2-hook.sh:ro
+      - ../projects:/opt/projects
+      - type: bind
+        source: ../shared/gdrive_kst
+        target: /opt/gdrive_kst
+        bind:
+          propagation: rslave        # receives the rclone mount (host-side or sidecar)
+    environment:
+      - HERMES_UID=${HERMES_UID:-1000}
+      - HERMES_GID=${HERMES_GID:-1000}
+    command: ["gateway", "run"]
+
+  dashboard:
+    image: hermes-agent
+    container_name: hermes-dashboard
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [gateway]
+    volumes:
+      - ../bot_memory/agent5/.hermes:/opt/data
+      - ../bot_memory/agent5/stage2-hook.sh:/opt/hermes/docker/stage2-hook.sh:ro
+    environment:
+      - HERMES_UID=${HERMES_UID:-1000}
+      - HERMES_GID=${HERMES_GID:-1000}
+    command: ["dashboard", "--host", "127.0.0.1", "--no-open"]   # localhost only
+
+  # ---- Model backend -------------------------------------------------------
+  # No local proxy service: the agent connects DIRECTLY to OpenRouter
+  # (https://openrouter.ai/api/v1). Configured via config.yaml + .env (OPENAI_API_KEY
+  # = OpenRouter key, MODEL_BASE_URL = OpenRouter endpoint).
+
+  # ---- Retrieval (profile: rag) --------------------------------------------
+  # NOTE: vector store + rag-mcp are placeholders pending the team's existing
+  # rag-mcp system — revisit the engine choice (Qdrant below is a stand-in).
+  qdrant:
+    profiles: ["rag"]
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    network_mode: host                # serves on :6333
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+  rag-mcp:
+    profiles: ["rag"]
+    # [BUILD: TBD] our RAG MCP service — exposes a `search(query,k)` tool returning
+    # cited chunks. See playbooks/rag-setup.md. Replace with build:/image: when built.
+    image: htf/rag-mcp:dev            # placeholder
+    container_name: rag-mcp
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [qdrant]
+    environment:
+      - QDRANT_URL=http://127.0.0.1:6333
+      # Embeddings provider: OpenRouter is chat-focused; embeddings may need a
+      # SEPARATE endpoint. Confirm against the team's rag-mcp system.
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-${OPENAI_API_KEY}}
+      - EMBEDDING_BASE_URL=${EMBEDDING_BASE_URL}
+      # - CORPUS_DIR=/data/brain      # index the markdown brain, not raw docs
+    volumes:
+      - ../shared/brain:/data/brain:ro
+
+  # ---- Google Drive mount (profile: gdrive) --------------------------------
+  # Mounts the Drive corpus read-only at ../shared/gdrive_kst for the other services.
+  # NOTE: host-side `rclone mount` (as in deploy-hermes-agent.md Step 7) is the
+  # simpler known-good path. This sidecar is the self-contained alternative and needs
+  # FUSE privileges + shared mount propagation to be visible to other containers.
+  rclone:
+    profiles: ["gdrive"]
+    image: rclone/rclone:latest
+    container_name: rclone-gdrive
+    restart: unless-stopped
+    cap_add: [SYS_ADMIN]
+    devices: ["/dev/fuse"]
+    security_opt: ["apparmor:unconfined"]
+    volumes:
+      - ./rclone.conf:/config/rclone/rclone.conf:ro
+      - type: bind
+        source: ../shared/gdrive_kst
+        target: /data/gdrive
+        bind:
+          propagation: rshared        # so the mount is visible to gateway/brain
+    command: >
+      mount ${RCLONE_REMOTE:-kst}: /data/gdrive
+      --read-only --vfs-cache-mode=full --allow-other --dir-cache-time=24h
+
+  # ---- Second-brain refresh (profile: brain) -------------------------------
+  brain:
+    profiles: ["brain"]
+    # [BUILD: TBD] runs the GDrive->markdown brain refresh on a schedule.
+    # See playbooks/gdrive-markdown-brain.md (the `brain refresh` CLI). Replace with
+    # build:/image: when built. Could be a cron container or a sleep-loop.
+    image: htf/brain:dev              # placeholder
+    container_name: brain-refresh
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [rclone]
+    environment:
+      - BRAIN_SOURCE=/data/gdrive     # the rclone mount (read-only)
+      - BRAIN_OUT=/data/brain         # git-tracked markdown brain
+      - REFRESH_CRON=${BRAIN_REFRESH_CRON:-0 4 * * 1}   # weekly, Mon 04:00
+      - EXTRACTION_API_KEY=${OPENAI_API_KEY}        # OpenRouter key (chat/vision)
+      - EXTRACTION_BASE_URL=${MODEL_BASE_URL}
+    volumes:
+      - type: bind
+        source: ../shared/gdrive_kst
+        target: /data/gdrive
+        bind:
+          propagation: rslave
+      - ../shared/brain:/data/brain   # output; commit/review the diff
+
+volumes:
+  qdrant_storage:

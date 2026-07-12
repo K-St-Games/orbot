@@ -1,0 +1,20 @@
+# Secrets — never commit
+.env
+bot_memory/**/.hermes/.env
+bot_memory/**/.hermes/auth.json
+rclone/config/rclone.conf
+
+# Runtime state / data — host-specific, not source
+bot_memory/**/.hermes/sessions/
+bot_memory/**/.hermes/logs/
+bot_memory/**/.hermes/state.db
+bot_memory/**/.hermes/state.db-wal
+bot_memory/**/.hermes/state.db-shm
+bot_memory/**/.hermes/memories/
+bot_memory/**/.hermes/workspace/
+rclone/logs/
+shared/
+
+# Editable corpora bind-mount target — not kit content
+projects/*
+!projects/.gitkeep

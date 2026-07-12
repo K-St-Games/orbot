@@ -1,0 +1,37 @@
+# Vendored external dependency (separate upstream repo, pinned commit —
+# see BUILD-KIT.md §3). Not part of this repo; clone it separately.
+single-compose/hermes-agent/
+
+# Secrets — never commit
+.env
+**/.env
+!**/.env.example
+single-compose/rclone/config/rclone.conf
+single-compose/rclone/config/*.tmp.scan
+**/auth.json
+**/*.key
+
+# Live deployment runtime state (bot_memory) — host-specific, mutable,
+# regenerated on every run. Not source. See BUILD-KIT.md §6.
+single-compose/bot_memory/
+
+# Live Google Drive FUSE mount target — never traverse into this.
+single-compose/shared/
+
+# rclone runtime logs
+single-compose/rclone/logs/
+
+# Editable corpora bind-mount target — not kit content
+single-compose/projects/*
+!single-compose/projects/.gitkeep
+
+# OS / editor cruft
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+node_modules/
+.vscode/
+.idea/

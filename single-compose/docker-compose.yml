@@ -1,0 +1,193 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Hi-Orbit agent — single-file compose (rclone mount + Hermes agent, one project)
+#
+# Three services: the privileged rclone FUSE mount, and the unprivileged
+# Hermes `gateway` + `dashboard` (same image, two commands). Hermes waits for
+# the mount to be HEALTHY before starting (depends_on: service_healthy).
+#
+# Verified against hermes-agent upstream commit fa4ebaa8b (2026-06-25) —
+# see ../hermes-agent/ (cloned, pinned). Re-check docker/stage2-hook.sh and
+# docker-compose.yml in that clone on any upstream update.
+#
+# Bring up:   docker compose up -d --build
+# Restart agent only (safe):   docker compose up -d gateway dashboard
+# Full restart: prefer ./recreate.sh (a plain `down` can leave a stale FUSE
+#               endpoint that breaks the agent's bind on next start — see §4e
+#               of ../agent-access-recipe.md).
+# ─────────────────────────────────────────────────────────────────────────────
+name: ${COMPOSE_PROJECT_NAME:-orbot}
+
+services:
+  # ── Google Drive FUSE mount ────────────────────────────────────────────────
+  rclone-gdrive:
+    image: rclone/rclone:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-orbot}-rclone
+    restart: unless-stopped
+    # FUSE requires these. This is why the mount is its OWN container — the
+    # Hermes containers themselves stay unprivileged.
+    privileged: true
+    devices:
+      - /dev/fuse
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-UTC}
+    ports:
+      # rclone WebGUI (remote management). Lock down RCLONE_USER/PASSWORD.
+      - "${RCLONE_GUI_PORT:-5575}:5572"
+    volumes:
+      - ./rclone/config:/config/rclone         # holds rclone.conf (OAuth token)
+      - ./rclone/logs:/logs
+      # The mount point on the HOST, with `shared` propagation so the Hermes
+      # containers can see the FUSE mount through their own binds below.
+      - ${GDRIVE_MOUNT_DIR:-./shared/gdrive_hiorbit}:/shared/gdrive_hiorbit:shared
+    command: >
+      mount "${RCLONE_REMOTE:-gdrive_hiorbit}:" /shared/gdrive_hiorbit
+      --config /config/rclone/rclone.conf
+      --uid ${PUID:-1000} --gid ${PGID:-1000} --umask 002
+      --allow-other --allow-non-empty
+      --vfs-cache-mode full --vfs-cache-max-size ${RCLONE_CACHE_SIZE:-10G}
+      --vfs-cache-max-age 24h --vfs-cache-poll-interval 1m
+      --dir-cache-time 1000h --poll-interval 15s --attr-timeout 1s
+      --vfs-fast-fingerprint --buffer-size 32M
+      --rc --rc-web-gui --rc-web-gui-no-open-browser --rc-addr :5572
+      --rc-user ${RCLONE_USER:-admin} --rc-pass ${RCLONE_PASSWORD:-admin}
+      --log-file /logs/rclone.log --log-level INFO
+    # NOTE: --fast-list was tried here and removed — rclone logs "--fast-list
+    # does nothing on a mount" (verified 2026-06-25). It only helps bulk
+    # commands (sync/copy/lsf), not a live FUSE mount's lazy, per-directory
+    # listing. The real fix for cold-cache latency is rclone-warmup below.
+    healthcheck:
+      # depends_on below gates on this: not "container up" but "mount present".
+      test: ["CMD", "mountpoint", "-q", "/shared/gdrive_hiorbit"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ── One-shot: pre-warm the VFS directory cache ─────────────────────────────
+  # rclone's --dir-cache-time 1000h keeps a populated cache fast for a very
+  # long time, but it starts EMPTY on every rclone-gdrive restart. Without
+  # this, the first real query (from Hermes or an operator) eats the cold-
+  # start cost live. This calls the running mount's own RC API (vfs/refresh,
+  # recursive) over the compose network — NOT a separate `rclone lsf -R`
+  # process, which would populate an unrelated, throwaway cache and warm
+  # nothing the live mount actually uses.
+  rclone-warmup:
+    image: rclone/rclone:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-orbot}-rclone-warmup
+    restart: "no"
+    depends_on:
+      rclone-gdrive:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    # _async=true is the key fix: a synchronous vfs/refresh ties the
+    # recursive walk to this HTTP request's lifetime — when our client-side
+    # call timed out (verified 2026-06-25: "net/http: timeout awaiting
+    # response headers"), the server canceled the refresh too ("context
+    # canceled" in rclone.log), so nothing actually got warmed. Async returns
+    # a jobid immediately and the refresh keeps running server-side,
+    # independent of this container. We then poll job/status (cheap, fast
+    # calls) just to report progress/completion in this container's logs.
+    command:
+      - >
+        set -eu;
+        RC="rclone rc --rc-addr rclone-gdrive:5572 --rc-user ${RCLONE_USER:-admin} --rc-pass ${RCLONE_PASSWORD:-admin}";
+        echo "Starting async VFS dir cache warm (recursive) for ~87k files...";
+        JOBID=$$($$RC vfs/refresh recursive=true _async=true | sed -n 's/.*"jobid": *\([0-9]*\).*/\1/p');
+        echo "Warm-up running as rclone jobid=$$JOBID (server-side, independent of this container)";
+        while :; do
+          STATUS=$$($$RC job/status jobid=$$JOBID);
+          echo "$$STATUS" | grep -q '"finished": *true' && { echo "$$STATUS"; break; };
+          sleep 15;
+        done;
+        echo "Warm-up complete."
+
+  # ── Hermes gateway (Discord + retrieval + workspace) ───────────────────────
+  gateway:
+    build: ./hermes-agent
+    image: ${AGENT_IMAGE:-orbot-hermes:local}
+    container_name: ${COMPOSE_PROJECT_NAME:-orbot}-hermes
+    restart: unless-stopped
+    depends_on:
+      rclone-gdrive:
+        condition: service_healthy        # wait for the mount, not just the container
+    # Hermes is validated upstream under host networking (gateway + dashboard
+    # talk to Discord/OpenRouter outbound; the dashboard is localhost-only by
+    # design). Keeping network_mode: host avoids deviating from the supported
+    # path. If this collides with other host services, see deploy notes.
+    network_mode: host
+    # No env_file here: Hermes loads its own secrets via `load_dotenv` from
+    # $HERMES_HOME/.env (bind-mounted below), not from Docker's env passthrough.
+    # Only compose-level substitution vars (uid/gid/tz/api-server) go in
+    # `environment:` — API_SERVER_KEY is the one deliberate exception to the
+    # "secrets only in HERMES_HOME/.env" rule: upstream's own compose pattern
+    # passes it this way (Docker env, not load_dotenv), so we follow it.
+    environment:
+      # Match the host user that owns bot_memory/orbot so container-written
+      # files stay readable/writable on the host. Upstream default is 10000.
+      HERMES_UID: ${HERMES_UID:-1000}
+      HERMES_GID: ${HERMES_GID:-1000}
+      TZ: ${TZ:-UTC}
+      # OpenAI-compatible API server, bound to the host's Tailscale IP only
+      # (NOT 0.0.0.0 — that would also expose it on any LAN/public interface,
+      # since this runs under network_mode: host). API_SERVER_KEY is mandatory
+      # for auth even on a private network. Get the IP via `tailscale ip -4`.
+      API_SERVER_HOST: ${TAILSCALE_IP:-127.0.0.1}
+      API_SERVER_KEY: "${API_SERVER_KEY:?Set API_SERVER_KEY in .env (generate with openssl rand -hex 24)}"
+    volumes:
+      # HERMES_HOME — config.yaml + .env + SOUL.md + workspace + state.
+      - ${HERMES_HOME_DIR:-./bot_memory/orbot/.hermes}:/opt/data
+      # CRITICAL local patch: override the s6 stage2 init hook with a copy that
+      # SKIPS the recursive install-tree chown (.venv/ui-tui/node_modules).
+      # Without this, every boot copies up tens of thousands of files on
+      # overlayfs (hours + GBs of layer bloat). See ../hermes-recipe/
+      # deploy-hermes-agent.md Step 5.
+      - ./bot_memory/orbot/stage2-hook.sh:/opt/hermes/docker/stage2-hook.sh:ro
+      # Editable local repos:
+      - ${PROJECTS_DIR:-./projects}:/opt/projects
+      # CORPUS: bind the FUSE mount to a TOP-LEVEL path (NOT nested under
+      # /opt/data — Docker silently fails nested FUSE binds). read_only: true
+      # enforces SOUL.md's "never modify design docs" as an actual OS-level
+      # mechanism — the file toolset's write_file/patch tools exist for the
+      # agent's writable zones, but any write attempt landing here fails
+      # regardless of what the model tries.
+      - type: bind
+        source: ${GDRIVE_MOUNT_DIR:-./shared/gdrive_hiorbit}
+        target: /opt/gdrive_hiorbit
+        read_only: true
+        bind:
+          propagation: rslave
+    command: ["gateway", "run"]
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "gateway"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # ── Hermes dashboard (localhost-only; tunnel for remote access) ────────────
+  dashboard:
+    image: ${AGENT_IMAGE:-orbot-hermes:local}
+    container_name: ${COMPOSE_PROJECT_NAME:-orbot}-hermes-dashboard
+    restart: unless-stopped
+    depends_on:
+      - gateway
+    network_mode: host
+    environment:
+      HERMES_UID: ${HERMES_UID:-1000}
+      HERMES_GID: ${HERMES_GID:-1000}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ${HERMES_HOME_DIR:-./bot_memory/orbot/.hermes}:/opt/data
+      - ./bot_memory/orbot/stage2-hook.sh:/opt/hermes/docker/stage2-hook.sh:ro
+    # Stays on 127.0.0.1: the dashboard holds API keys and has no auth of its
+    # own. Hermes itself refuses a non-loopback bind without a registered
+    # OAuth auth-provider plugin (or --insecure, which we deliberately don't
+    # pass). Reach it over Tailscale via SSH tunnel instead:
+    #   ssh -L 9119:localhost:9119 <tailscale-host>
+    command: ["dashboard", "--host", "127.0.0.1", "--no-open"]

@@ -1,0 +1,38 @@
+# Hermes Agent — config.yaml TEMPLATE (sanitized)
+# Secrets (Discord token, OpenRouter key) live in the sibling .env, NOT here.
+# Replace <...> placeholders before use.
+
+model:
+  # Direct connection to OpenRouter (OpenAI-compatible). No local proxy.
+  # Use an OpenRouter model id, e.g. "anthropic/claude-sonnet-4.6" or "deepseek/deepseek-chat".
+  default: "<OPENROUTER_MODEL_ID>"
+  provider: "custom"
+  base_url: "https://openrouter.ai/api/v1"
+  # Key is provided via OPENAI_API_KEY in .env (your OpenRouter key).
+  # Leave as a placeholder here; do not paste a real key into this file.
+  api_key: "<OPENROUTER_API_KEY>"
+
+# Isolate session history per user in shared channels.
+group_sessions_per_user: true
+
+discord:
+  require_mention: true            # respond in server channels only when @mentioned
+  thread_require_mention: false
+  auto_thread: true                # isolate each @mention into its own thread
+  reactions: true                  # 👀 / ✅ / ❌ processing reactions
+  history_backfill: true
+  history_backfill_limit: 50
+  allow_mentions:                  # safe defaults — never ping @everyone/@role
+    everyone: false
+    roles: false
+    users: true
+    replied_user: true
+  # Channels where the bot responds. Replace with your channel IDs. Remove this
+  # block to let the bot respond in every channel it can see (not recommended —
+  # combine with restricted DISCORD_ALLOWED_USERS in .env).
+  allowed_channels:
+    - "<DISCORD_CHANNEL_ID_1>"
+    - "<DISCORD_CHANNEL_ID_2>"
+
+display:
+  tool_progress: "all"             # off | new | all | verbose

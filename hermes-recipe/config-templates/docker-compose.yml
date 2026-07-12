@@ -1,0 +1,62 @@
+# docker-compose.yml for Hermes Agent — SANITIZED TEMPLATE
+#
+# Replaces upstream's docker-compose.yml. Place at hermes-agent/docker-compose.yml.
+# Usage:  HERMES_UID=$(id -u) HERMES_GID=$(id -g) docker compose up -d
+#
+# Security notes:
+#   - The dashboard binds to 127.0.0.1 (localhost) only. It stores API keys;
+#     do NOT expose it on the LAN. For remote access, SSH-tunnel: ssh -L 9119:localhost:9119
+#   - Keep `/init` (s6-overlay PID 1) as the entrypoint; it runs cont-init.d setup
+#     before services start. Bypassing it breaks the gateway.
+#   - The OpenAI-compatible API server stays OFF unless you uncomment API_SERVER_*.
+#
+services:
+  gateway:
+    build: .
+    image: hermes-agent
+    container_name: hermes
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      # Fleet home — config.yaml + .env + workspace + state live here.
+      - ../bot_memory/agent5/.hermes:/opt/data
+      # CRITICAL local patch: override the s6 stage2 init hook with a copy that
+      # SKIPS the recursive install-tree chown (.venv/ui-tui/node_modules).
+      # Without this, every boot copies up tens of thousands of files on overlayfs
+      # (hours + GBs of layer bloat). See deploy-hermes-agent.md Step 5.
+      - ../bot_memory/agent5/stage2-hook.sh:/opt/hermes/docker/stage2-hook.sh:ro
+      # Host folders exposed to the agent, at top-level paths (NOT nested under the
+      # /opt/data workspace mount) with symlinks pointing in from workspace/.
+      - ../projects:/opt/projects
+      - type: bind
+        source: ../shared/gdrive_kst
+        target: /opt/gdrive_kst
+        bind:
+          propagation: rslave
+    environment:
+      # Match the host user that owns bot_memory/agent5 so container-written files
+      # stay readable/writable on the host. Upstream default is 10000.
+      - HERMES_UID=${HERMES_UID:-1000}
+      - HERMES_GID=${HERMES_GID:-1000}
+      # To expose the OpenAI-compatible API server beyond localhost, uncomment BOTH
+      # (API_SERVER_KEY is mandatory for auth):
+      # - API_SERVER_HOST=127.0.0.1
+      # - API_SERVER_KEY=${API_SERVER_KEY}
+    command: ["gateway", "run"]
+
+  dashboard:
+    image: hermes-agent
+    container_name: hermes-dashboard
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - gateway
+    volumes:
+      - ../bot_memory/agent5/.hermes:/opt/data
+      # Same critical init-hook override as the gateway.
+      - ../bot_memory/agent5/stage2-hook.sh:/opt/hermes/docker/stage2-hook.sh:ro
+    environment:
+      - HERMES_UID=${HERMES_UID:-1000}
+      - HERMES_GID=${HERMES_GID:-1000}
+    # Localhost-only. For remote access, tunnel via `ssh -L 9119:localhost:9119`.
+    command: ["dashboard", "--host", "127.0.0.1", "--no-open"]

@@ -1,0 +1,7 @@
+{
+  "cortex-rag": {
+    "type": "sse",
+    "url": "http://100.97.25.117:8100/sse",
+    "description": "Cortex RAG - Search and query Obsidian notes"
+  }
+}
