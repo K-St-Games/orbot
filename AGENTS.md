@@ -8,14 +8,16 @@ for surfacing that knowledge.
 ## Current phase
 
 The product vision and tiered roadmap are approved in direction and grounded by real
-Hi-Orbit corpus samples. The active bounded slice is the first read-only Quill dependency
-integration described in [`CURRENT_TASK.md`](CURRENT_TASK.md), starting from the approved
-`K-St-Games/kst-beta-ide@f68503f` baseline. Do not execute the older wiki/Cortex
-implementation plan verbatim or resume the previous deployment-only "get it running"
-mode without first reconciling the task against the vision and roadmap.
+Hi-Orbit corpus samples. The first read-only Quill integration has passed owner-reported
+host validation. The active bounded slice in [`CURRENT_TASK.md`](CURRENT_TASK.md) makes
+repository mode the Orbot default and exposes the full useful `hi-orbit-wiki` tree to the
+engineering lead while preserving read-only enforcement and canonical publication/retrieval
+boundaries. Do not execute the older wiki/Cortex implementation plan verbatim or resume the
+previous deployment-only "get it running" mode without first reconciling the task against
+the vision and roadmap.
 
-Keep the MkDocs service as a fallback until the Quill integration gate passes. Do not add
-Quill editing, Git review, retrieval, Drive automation, or repair writeback to this slice.
+Keep the MkDocs service as a canonical-only fallback. Do not add Quill editing, Git review,
+retrieval, Drive automation, or repair writeback to this slice.
 
 Complexity must be earned by observed usage. Build the smallest trustworthy vertical
 slice, verify it with real material, and defer speculative product infrastructure.
