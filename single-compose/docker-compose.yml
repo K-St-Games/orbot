@@ -130,12 +130,17 @@ services:
     # commands (sync/copy/lsf), not a live FUSE mount's lazy, per-directory
     # listing. The real fix for cold-cache latency is rclone-warmup below.
     healthcheck:
-      # depends_on below gates on this: not "container up" but "mount present".
-      test: ["CMD", "mountpoint", "-q", "/shared/gdrive_hiorbit"]
+      # depends_on below gates on this. NOT just "mount present" (mountpoint -q
+      # passes on an EMPTY mount) — we also assert an expected sentinel dir is
+      # visible, so a stale/re-permissioned root_folder_id that silently serves
+      # an empty listing trips the healthcheck instead of looking "healthy".
+      # Override GDRIVE_HEALTHCHECK_DIR if the mount root's contents change.
+      test: ["CMD-SHELL", "mountpoint -q /shared/gdrive_hiorbit && test -d '/shared/gdrive_hiorbit/${GDRIVE_HEALTHCHECK_DIR:-Production}'"]
       interval: 15s
       timeout: 10s
       retries: 5
-      start_period: 20s
+      # first content lookup needs Drive API + auth, so give it more grace.
+      start_period: 30s
 
   # ── One-shot: pre-warm the VFS directory cache ─────────────────────────────
   # rclone's --dir-cache-time 1000h keeps a populated cache fast for a very
