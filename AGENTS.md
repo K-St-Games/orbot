@@ -8,13 +8,16 @@ for surfacing that knowledge.
 ## Current phase
 
 The product vision and tiered roadmap are approved in direction and grounded by real
-Hi-Orbit corpus samples. The first read-only Quill integration has passed owner-reported
-host validation. The active bounded slice in [`CURRENT_TASK.md`](CURRENT_TASK.md) makes
-repository mode the Orbot default and exposes the full useful `hi-orbit-wiki` tree to the
-engineering lead while preserving read-only enforcement and canonical publication/retrieval
-boundaries. Do not execute the older wiki/Cortex implementation plan verbatim or resume the
-previous deployment-only "get it running" mode without first reconciling the task against
-the vision and roadmap.
+Hi-Orbit corpus samples. The first canonical-only read-only Quill integration passed
+owner-reported host validation. The WIP recovery slice in
+[`CURRENT_TASK.md`](CURRENT_TASK.md) makes repository mode the Orbot default and exposes
+the full useful `hi-orbit-wiki` tree. It has been corrected to pass a clean-browser
+startup (no narrative flash, no TypeError on empty narrative state) and the dependency
+no longer pins unrelated Git-review work. Local deterministic gates pass;
+deployment-host acceptance and engineering-lead approval remain open. Do not merge to
+parent `main` before those host gates close. Do not execute the older wiki/Cortex
+implementation plan verbatim or resume the previous deployment-only "get it running" mode
+without first reconciling the task against the vision and roadmap.
 
 Keep the MkDocs service as a canonical-only fallback. Do not add Quill editing, Git review,
 retrieval, Drive automation, or repair writeback to this slice.
@@ -41,7 +44,7 @@ Read these in order before making product, architecture, or planning changes:
 |---|---|
 | [`docs/vision/`](docs/vision/) | Product vision, feedback, prototypes, and content-model design. |
 | [`hi-orbit-wiki/`](hi-orbit-wiki/) | Independently versioned Hi-Orbit knowledge repository, linked as a submodule. |
-| `vendor/kst-beta-ide/` | Temporary pinned source dependency for Quill; add as a submodule at the exact commit in `CURRENT_TASK.md`. |
+| `vendor/kst-beta-ide/` | Temporary pinned source dependency for Quill; keep the submodule at the exact reviewed commit in `CURRENT_TASK.md`. |
 | [`cortex/`](cortex/) | Vendored retrieval starting point; not yet aligned with the approved product contracts. |
 | [`single-compose/`](single-compose/) | Current Hermes/rclone deployment scaffold and runtime integration. |
 | [`example_breakdowns/`](example_breakdowns/) | Real corpus samples for design and testing, not the operational corpus. |
@@ -94,9 +97,16 @@ be deferred:
   `hi-orbit-wiki/`, push them there, then update the parent gitlink deliberately.
 - Treat Quill as an external pinned dependency. Do not copy `writer/` into Orbot, follow a
   moving upstream branch, or deploy the upstream full Beta IDE web image unchanged.
-- For the first Quill gate, configure the wiki with `content.root: docs`, mount it
-  read-only into the Quill API only, disable the browser editor, and make write requests
-  fail explicitly as read-only rather than as generic filesystem errors.
+- The completed canonical-only Quill gate used `content.root: docs`. The current private
+  engineering-review slice deliberately uses `content.root: .` so the engineering lead
+  can inspect canonical docs, drafts, evidence, metadata, repairs, and templates. This
+  wider Quill visibility does not broaden MkDocs or future Discord retrieval beyond
+  canonical `docs/`.
+- Mount the wiki read-only into the Quill API only, disable browser editing, and make
+  write requests fail explicitly as read-only rather than as generic filesystem errors.
+- The recovery dependency is at `vendor/kst-beta-ide@7c9c113` on branch
+  `codex/orbot-repository-mode-recovery`. It descends from `6d51479`, not current upstream
+  `main`; Git-status/Changes behavior is explicitly excluded.
 - A human-gated step requires the human's secret, approval, source material, or operational
   verification. Ask rather than guessing.
 
