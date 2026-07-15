@@ -1,5 +1,6 @@
-# The only root-context image is the private MkDocs site. Keep the build
-# context limited to its Dockerfile and the reviewed canonical wiki content.
+# Root-context images: the private MkDocs site and the Quill web frontend.
+# Keep the build context limited to their Dockerfiles and the specific
+# reviewed content/vendored assets each one needs.
 *
 !hi-orbit-wiki/
 !hi-orbit-wiki/mkdocs.yml
@@ -7,3 +8,8 @@
 !hi-orbit-wiki/docs/**
 !wiki-site/
 !wiki-site/Dockerfile
+!single-compose/
+!single-compose/nginx.orbot-quill.conf
+!vendor/kst-beta-ide/
+!vendor/kst-beta-ide/writer/
+!vendor/kst-beta-ide/writer/**
