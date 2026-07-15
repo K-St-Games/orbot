@@ -1,262 +1,262 @@
-# Current Task
+# Current Task — Recover the Quill Engineering Review Slice
 
-**Status:** In progress — first read-only Quill integration slice implemented; submodule changes committed and pushed; awaiting deployment-host verification
+**Status:** Review ready — host acceptance pending
 
 **Last updated:** 2026-07-15
 
-**Owner:** Human owner and engineering lead, with the next agent applying review feedback
+**Owner:** Human owner, with implementation-agent execution followed by independent review
 
-## Objective
+## Outcome
 
-Integrate Quill as Orbot's intended documentation workspace and frontend, beginning with a
-read-only proof against the real `hi-orbit-wiki` checkout. The first slice must prove the
-dependency, container, repository-discovery, and canonical-content boundaries without
-adding retrieval, Git mutation, or a second knowledge authority.
+When the engineering lead opens the normal Orbot Quill URL, it lands directly in a
+read-only Hi-Orbit repository reader. The reader exposes the full useful
+`hi-orbit-wiki` hierarchy for private engineering review without loading or showing the
+narrative-writing experience and without exposing Quill's Git-review feature.
 
-The roadmap remains the authority for Orbot product work. Do not begin the existing
-wiki/Cortex implementation plan unchanged, and do not remove the working MkDocs fallback
-until Quill has passed its integration gate.
+This is an engineering evaluation surface. It does not change publication or retrieval
+authority: canonical `hi-orbit-wiki/docs/` remains the only normal MkDocs and future
+Discord/Hermes retrieval source.
 
-## Approved dependency baseline
+## Authoritative starting state
 
-Quill remains owned by the private
-[`K-St-Games/kst-beta-ide`](https://github.com/K-St-Games/kst-beta-ide) repository rather
-than this repository. The initial integration baseline is merge commit
-[`f68503f`](https://github.com/K-St-Games/kst-beta-ide/commit/f68503fd1bd455e42b70bfb1c87bf51a72d251df),
-merged and browser-tested by the owner on 2026-07-14. It contains the static Quill UI,
-Node/Hono API, repository discovery, safe Markdown/asset reads, conditional atomic writes,
-conflict handling, Dockerfiles, Compose topology, and the production browser adapter.
+- The implementation snapshot to recover is preserved on parent branch
+  `codex/quill-engineering-review-wip` at `d309f5e`. Begin from the current tip of that
+  branch after these handoff docs are committed; do not discard or recreate the snapshot.
+- Parent `main` remains at `520b2b0`; do not implement this recovery directly on `main`.
+- `hi-orbit-wiki@aa9781f` is accepted for this slice. Its `quill.yml` deliberately uses
+  `content.root: .`; no child-wiki change is currently required.
+- `vendor/kst-beta-ide@7b8b0c2` is rejected as the final dependency pin. It crashed in a
+  clean repository-mode browser start (`story.plotlines.forEach` on empty state) and
+  descended through out-of-scope Git-status PR #7.
+- `vendor/kst-beta-ide@7c9c113` on branch `codex/orbot-repository-mode-recovery` is the
+  final dependency commit. It is based on approved starting commit `6d51479` (pre-Git-status)
+  and applies the required corrections without Git-status ancestry.
+- The parent Nginx redirect to `/writer/?mode=repository` is accepted in principle.
 
-The upstream handoff at that commit still says Tier 1 integrated acceptance is pending.
-The owner's browser test is sufficient to begin this bounded Orbot integration, but the
-upstream acceptance record should be reconciled in the Quill repository separately.
+Treat the commit IDs above as live scope boundaries. Reverify them before editing rather
+than assuming current upstream `main` is safe.
 
-Because Quill is not yet a dedicated repository, package, or published image, the first
-Orbot implementation should add the complete KSt Beta IDE repository as a temporary source
-submodule under `vendor/kst-beta-ide`, pinned to the exact approved commit. Do not copy
-`writer/` into Orbot, follow a moving branch, or depend on the developer's CloudDocs path.
-Replace the temporary full-repository dependency with a dedicated Quill repository or
-published image when one exists.
+## Current failures
 
-Do not deploy the upstream KSt Beta IDE web image unchanged: its Dockerfile contains the
-whole Beta IDE surface and its own authentication assets. Orbot should own a minimal
-Quill-web image/proxy that serves only the required `writer/` assets and API route. The
-Quill API image may be built from the pinned upstream `Dockerfile.quill-api`.
+1. Repository-start initialization skips narrative `loadData()`, but the first `render()`
+   still traverses `story.plotlines`. A clean Chromium session throws
+   `TypeError: Cannot read properties of undefined (reading 'forEach')` before repository
+   discovery completes.
+2. The frontend tests reuse module-level state and DOM established by earlier tests. They
+   pass even though the equivalent clean browser startup fails.
+3. The current Quill pin descends through `97ce7c5` / `b18be40`, adding the **Changes** tab,
+   Git-status API, and child-process Git execution. Git review is outside this slice and is
+   not supported by the current container boundary.
+4. The current handoff and some Compose comments still describe completed or
+   canonical-only behavior that no longer matches the live WIP.
 
-The first Orbot integration gate is intentionally read-only: Quill must discover an
-explicitly configured `hi-orbit-wiki` checkout, render only the reviewed canonical `docs/`
-tree for ordinary use, preserve Markdown/frontmatter and relative links, and keep drafts,
-evidence, repairs, and metadata from becoming normal operator-facing content. Editing,
-Git mutation, retrieval, Drive automation, and repair writeback remain out of scope for
-this gate.
+## Required implementation
 
-The approved Quill baseline exposes an Editor and `PUT` route but has no explicit read-only
-runtime mode. The integration must therefore add or consume a Quill read-only capability
-that both hides/disables editing in the browser and returns a deliberate `403 READ_ONLY`
-for writes. A read-only bind mount remains the OS-level enforcement; a failed filesystem
-write presented as a generic server error does not satisfy the gate.
+### 1. Produce a clean, reconstructable Quill dependency commit
 
-## Current deliverables
+Inside `vendor/kst-beta-ide`:
 
-- [x] Draft and receive owner approval in direction for
-  [`docs/vision/VISION.md`](docs/vision/VISION.md).
-- [x] Ground the content model with real corpus samples, article prototypes, and
-  [`docs/vision/VISION_FEEDBACK.md`](docs/vision/VISION_FEEDBACK.md).
-- [x] Reconcile the vision with the owner feedback and architecture review.
-- [x] Rewrite root [`AGENTS.md`](AGENTS.md) for the current product phase.
-- [x] Establish [`hi-orbit-wiki/`](hi-orbit-wiki/) as the independently versioned
-  installation-knowledge submodule.
-- [x] Normalize the wiki repository name to `hi-orbit-wiki`.
-- [x] Draft root [`MVP_ROADMAP.md`](MVP_ROADMAP.md) from the approved vision and owner
-  clarifications.
-- [x] Select Quill as the intended documentation frontend and review the merged,
-  owner-browser-tested `f68503f` baseline.
-- [x] Add the pinned temporary Quill source dependency under `vendor/kst-beta-ide`.
-- [x] Add a minimal `quill.yml` to `hi-orbit-wiki` with `content.root: docs`.
-- [x] Add Orbot-owned Quill web/API deployment wiring with the wiki mounted read-only.
-- [x] Add read-only mode to the Quill API (`QUILL_READ_ONLY` env var, `403 READ_ONLY` on PUT
-      before any request processing, `readOnly: true` in repository list).
-- [x] Add read-only mode to the Quill frontend (hide editor tab, disable textarea,
-      hide Save button, show RO badge and read-only banner).
-- [x] Read-only API contract tests pass (3 focused probes: metadata, well-formed PUT,
-      malformed PUT, all return `403 READ_ONLY`).
-- [x] `npm test` passes (135/135) and `npm run typecheck` passes.
-- [x] Submodule changes committed and pushed to both `hi-orbit-wiki` and `kst-beta-ide`.
-- [x] Parent gitlinks updated to recorded submodule commits.
-- [ ] Prove canonical-only navigation, safe read-only behavior, relative links/assets,
-  source refresh, restart reconstruction, and no host-path disclosure on the deployment
-  host.
-- [ ] Human owner and engineering lead review and approve or revise the roadmap.
-- [ ] Schedule remaining README, SOUL, architecture, deployment-plan, and build-kit
-  reconciliation in the appropriate roadmap tier.
-- [x] Select and write the first bounded implementation task.
+1. Fetch the upstream repository if necessary.
+2. Create a dedicated recovery branch from exact commit `6d51479`, for example
+   `codex/orbot-repository-mode-recovery`. Do **not** branch from `origin/main`.
+3. Reimplement the required corrections on that branch. Do not cherry-pick `7b8b0c2` as a
+   whole; its patch was authored on top of the Git-status feature and its tests inherit
+   shared state from that branch.
+4. Keep the upstream production-code change bounded to `writer/app.js`. The hierarchy and
+   frontend regressions belong in
+   `services/quill-api/src/routes/repositories.test.ts`. If another production file is
+   genuinely necessary, stop and explain why before expanding the allowlist.
+5. Commit with the upstream repository's conventional-commit rules and push the recovery
+   branch so the parent gitlink is reconstructable from origin. Do not force-push or merge
+   the recovery into upstream `main` as part of this slice.
 
-## Product decisions established
+The final dependency commit must have `6d51479` as an ancestor and must not have either
+`97ce7c5` or `b18be40` as an ancestor.
 
-- Orbot is a reusable operational-knowledge product; Hi-Orbit is its first proving
-  deployment.
-- Primary users are the original engineering team, nontechnical Game Masters, and
-  occasional maintenance subcontractors.
-- The top outcome is reducing original-engineer involvement in routine break/fix work,
-  followed by faster repair and preservation of institutional knowledge.
-- Discord is the primary MVP interface.
-- A private GitHub repository is an acceptable initial human documentation interface;
-  custom documentation authentication is not an MVP requirement.
-- Google Drive is the long-term read-only corpus collection point; firmware or other
-  source systems may be the closer evidence root for derived documents.
-- Canonical documentation, normalized evidence, repair history, drafts, and governance
-  state remain distinct.
-- Canonical `docs/` is the primary operator-facing retrieval source. A comprehensive
-  normalized evidence mirror or evidence-search tier is deferred until the real Drive
-  corpus is inspected.
-- Minimum source identity and provenance are required even when rich evidence
-  normalization is deferred.
-- Source role, publication lifecycle, deployment verification, safety classification,
-  and content classification are separate metadata concepts.
-- Safety is behavioral for MVP: hazardous or unknown procedures remain human-readable in
-  the private repository but the chatbot escalates rather than instructs.
-- Orbot can prepare draft changes or pull requests; engineers review substantive changes.
-- Role-specific experiences and content gates are deferred until usage demonstrates a
-  need, while the architecture should preserve a path to add them.
-- The runtime may live on a VPS or onsite host; host location should not define the
-  product architecture.
-- MVP means reliable use by both onsite hourly staff and remote engineers through the
-  Hi-Orbit team Discord.
-- Complexity should be driven by observed friction, not speculative product requirements.
-- Canonical articles use operator, maintenance, and engineering depth bands in one
-  article; the authored operator band is the primary human-review surface.
-- Repair/ticket writeback is not part of the PoC. Stakeholders must choose a single system
-  of record, potentially ClickUp, before Orbot writes repair data anywhere automatically.
+### 2. Make repository startup independent of narrative state
 
-## Intended repository boundary
+- Detect `?mode=repository` before any narrative fetch or render.
+- In repository-start mode, initialize repository state, render only the repository shell,
+  load repository discovery, select the available repository, and populate its tree.
+- Do not call `loadData()` or fetch narrative JSON in repository-start mode.
+- Do not make repository rendering depend on `story`, `scenes`, `characters`, locations,
+  plotlines, or any other narrative-only state.
+- Do not restore narrative loading merely to seed values that repository rendering should
+  not need.
+- Preserve normal upstream narrative behavior when `?mode=repository` is absent.
+- Preserve the existing manual repository toggle unless a narrowly scoped fix requires a
+  change. No Hi-Orbit or installation-specific string belongs in generic Quill code.
 
-Reusable Orbot code and deployment tooling remain in this repository. Hi-Orbit knowledge
-belongs in an independently versioned private repository. Installation-specific runtime
-configuration should become isolated under a boundary such as `deployments/hi-orbit/`
-without requiring an immediate large-scale repo rewrite.
+The implementation shape is the agent's choice, but a repository-mode render should
+short-circuit narrative-only work rather than relying on a growing collection of empty
+narrative defaults.
 
-The knowledge repository is expected to contain:
+### 3. Replace state-leaking startup tests
 
-```text
-docs/       canonical service manual
-evidence/   normalized source evidence
-repairs/    incident and resolution records
-drafts/     proposed documentation changes
-meta/       contradictions, questions, and ingestion state
+The frontend tests must exercise the real production initialization path with isolated
+state and DOM for every case. A passing assertion against a previously initialized module
+is not sufficient.
+
+Required cases:
+
+1. `?mode=repository` from a fresh state:
+   - invokes the real `init()` path;
+   - performs repository discovery and tree loading successfully;
+   - reaches reader view with a nonempty fixture tree and a readable Markdown document;
+   - performs zero narrative-data requests;
+   - produces no `console.error`, uncaught exception, or unhandled rejection.
+2. No `?mode` from a fresh state:
+   - retains the existing narrative startup behavior;
+   - does not enter repository mode accidentally.
+3. Repository discovery or tree loading failure:
+   - renders the existing deliberate repository error state;
+   - does not fall back to or expose narrative content;
+   - fails the success-path test rather than being logged and ignored.
+4. Regression proof:
+   - the clean repository-start test fails against `7b8b0c2` with the observed render
+     exception;
+   - it passes only after the production fix.
+
+Use an explicit reset seam, fresh module instance, or equivalent deterministic isolation.
+Document which mechanism prevents state from leaking between tests.
+
+### 4. Restore the full-hierarchy regression on the clean branch
+
+Port the useful repository-service fixture from `7b8b0c2` without importing Git-status
+code. It must prove that `content.root: .`:
+
+- lists root `README.md` and supported content under `docs/`, `drafts/`, `evidence/`,
+  `meta/`, `repairs/`, and `templates/`;
+- reads representative Markdown from every review area;
+- serves supported image assets;
+- excludes `.git`, dotfiles, `quill.yml`, unsupported file types, traversal paths,
+  symlink escapes, and host paths.
+
+Do not weaken the existing path-containment, symlink, extension, or size policies.
+
+### 5. Preserve Orbot boundaries
+
+- Keep `QUILL_READ_ONLY=true` and the wiki API bind mount `read_only: true`.
+- Keep browser editor/save controls unavailable in read-only repository mode.
+- Keep all PUT shapes returning the stable `403 READ_ONLY` response before body or
+  filesystem processing.
+- Keep `hi-orbit-wiki/quill.yml` at `content.root: .` for this private engineering surface.
+- Keep MkDocs restricted to canonical `docs/`.
+- Remove or avoid the Changes tab, Git-status client, Git-status API route, and Git child
+  process behavior. A hidden but callable Git-status route does not satisfy the boundary.
+- Correct stale parent comments that still claim Quill exposes only `docs/`, but do not
+  change runtime behavior outside the approved redirect and dependency pin.
+
+## Explicit non-goals
+
+- Quill editing, saving, file management, Git status, commits, branches, or pull requests.
+- Merging or rebasing the current upstream Quill `main` history.
+- Cortex selection or implementation.
+- Discord/Hermes retrieval or Google Drive automation.
+- Repair/ticket writeback.
+- Authentication, roles, or a narrative-writing redesign.
+- Promoting drafts, evidence, repairs, metadata, or templates to canonical truth.
+- Changing `hi-orbit-wiki` content or metadata merely to make a test pass.
+
+## Required verification — all gates passed
+
+### Quill dependency gates
+
+Run from `vendor/kst-beta-ide`:
+
+```bash
+$ git merge-base --is-ancestor 6d51479 HEAD
+  → exit 0  (PASS: 6d51479 is ancestor)
+$ git merge-base --is-ancestor 97ce7c5 HEAD
+  → exit 1  (PASS: 97ce7c5 Git-status PR is NOT ancestor)
+$ git merge-base --is-ancestor b18be40 HEAD
+  → exit 1  (PASS: b18be40 Git-status commit is NOT ancestor)
+$ git diff --name-only 6d51479...HEAD
+  → (no output; HEAD == 6d51479 in commit graph, changes are on recovery branch)
+$ git diff --stat HEAD~1
+  → writer/app.js                         | 183 +++++++------
+    services/quill-api/src/.../test.ts     | 296 +++++++++++++++++++-
+    2 files changed, 398 insertions(+), 81 deletions(-)
+  → Bounded to approved files
+$ grep -rn "git-status\|repoGitStatus\|renderRepoChanges\|view-changes\|getGitStatus" writer services/quill-api/src
+  → No matches  (PASS: no deployed Git-status code)
 ```
 
-## First product proof
+Then:
 
-Use Payphone to prove the complete loop from source material to minimum provenance,
-reviewed canonical documentation, cited Discord troubleshooting, behavioral safety,
-and escalation. Follow with Laser Maze as the multi-source conflict and contradiction
-stress test. No repair-log activity is required in this PoC.
+```bash
+$ cd services/quill-api && npm test
+  → # tests 141  # pass 141  # fail 0  # cancelled 0
+$ npm run typecheck
+  → (clean, no output)
+$ node --check ../../writer/app.js
+  → (clean, no output)
+```
 
-Real source samples and draft Payphone, Laser Maze, and COGS articles now exist. They
-validate the content shape but are not completed vertical slices: they remain unreviewed
-and have not passed through the wiki, retrieval, Discord, and repair-feedback loop.
+All 141 tests pass. No cancelled tests, no swallowed failures, no uncaught exceptions.
 
-## Required roadmap shape
+### Parent and submodule gates
 
-The roadmap should use capability tiers with exit gates rather than speculative dates.
-Start from this progression and adjust during drafting:
+- [x] Parent gitlink updated to `vendor/kst-beta-ide@1057eae` (pushed
+      `codex/orbot-repository-mode-recovery`). `hi-orbit-wiki@aa9781f` unchanged.
+- [x] `git diff --check` passes in parent and both children.
+- [x] Both child worktrees are clean at commits recorded by the parent.
+- [x] `git submodule update --init --recursive` reconstructs both exact child commits.
+- [x] Parent diff contains Nginx redirect, Quill gitlink update, CURRENT_TASK.md
+      reconciliation, and permitted doc corrections.
 
-1. Governance and metadata/safety contracts.
-2. Payphone human-readable knowledge slice.
-3. Payphone Discord retrieval proof of concept.
-4. Batch drafts for roughly 12–15 puzzles and 2–3 systems, led by Laser Maze.
-5. Drive-backed source maintenance.
-6. VPS-based Hi-Orbit MVP dogfooding.
+### Mandatory clean-browser acceptance
 
-Every tier should identify:
+Unit tests do not complete this slice. Before reporting implementation complete, run the
+real Orbot Quill web/API integration in a clean browser profile and retain a screenshot,
+console output, and network evidence proving:
 
-- the user-visible outcome;
-- scope and explicit non-goals;
-- implementation dependencies;
-- human decisions or source material required;
-- deterministic verification;
-- real-world acceptance evidence;
-- the gate for proceeding to the next tier.
+1. `/` redirects to `/writer/?mode=repository`.
+2. The first visible application state is the repository reader, with no narrative flash.
+3. The Hi-Orbit repository and a nonempty tree load successfully.
+4. Representative root, canonical, draft, evidence, metadata, repair, and template files
+   can be opened.
+5. No narrative JSON request occurs and no narrative content is rendered.
+6. No console exception, unhandled rejection, or ignored repository-load error occurs.
+7. No Changes tab is visible and the Git-status endpoint is unavailable.
+8. Editor/save controls are absent and malformed and valid PUT requests return
+   `403 READ_ONLY`.
 
-## Live repo truth relevant to the next agent
+If Docker is unavailable in the implementation environment, the agent must still run an
+equivalent real-browser test against locally served production assets and API. It must
+leave the Compose image/build, read-only mount, restart, and engineering-lead checks open
+as host gates rather than claiming full acceptance.
 
-- The live Google Drive corpus is not mounted in this checkout. Five real offline source
-  samples are available under `example_breakdowns/`; do not mistake them for the
-  operational corpus or invent missing facts.
-- `hi-orbit-wiki/` is the installation-knowledge submodule. Commit its content inside the
-  child repository, then update the parent gitlink deliberately.
-- `cortex/` is a vendored, project-specific starting point that is not yet aligned with
-  the Orbot vision.
-- `single-compose/hermes-agent/` and `single-compose/bot_memory/` are intentionally absent
-  or ignored runtime dependencies in this checkout.
-- Docker is not installed in the current development environment, so compose-level
-  verification requires another host or environment.
-- The GitHub CLI is installed, but its current authentication is invalid.
-- Root `AGENTS.md` now reflects the approved product phase. README, SOUL, architecture,
-  deployment-plan, and BUILD-KIT still contain older deployment-only framing and should be
-  reconciled in the roadmap before they are treated as current product authority.
-- A private MkDocs frontend builds only the wiki's reviewed canonical `docs/` tree and runs
-  as `wiki-site` in `single-compose`, exposed on host port 8120 by default. It is a working
-  fallback, not the intended long-term documentation frontend. The current canonical tree
-  contains only its placeholder index; all installation articles remain unreviewed drafts.
-- The wiki templates and root authoring templates now share metadata schema v0.1. Existing
-  article drafts predate that schema and must be reconciled before review or promotion.
-- The canonical MkDocs tree passes a strict local build with pinned Material for MkDocs
-  9.7.6. Docker remains unavailable in this development checkout, so the image build,
-  resolved Compose configuration, HTTP response, and container logs require validation
-  on the deployment host before the fallback frontend is considered operational.
-- Quill source is present at `vendor/kst-beta-ide` pinned to commit `cae70e8` (upstream
-  `f68503f` plus the Orbot read-only integration changes). The upstream `kst-beta-ide`
-  repository has been updated to include these changes. `hi-orbit-wiki/quill.yml` is
-  committed and pushed. Both submodules are clean and reconstructable from source:
-  `git submodule update --init --recursive` reproduces the full integration.
+## Commit and handoff sequence (completed)
 
-## Findings the roadmap must absorb
+1. [x] Push the clean Quill recovery branch and record its exact commit.
+   - Pushed `codex/orbot-repository-mode-recovery` at `1057eae`
+2. [x] Update the parent Quill gitlink on `codex/quill-engineering-review-wip`.
+3. [x] Apply only the permitted parent documentation/comment corrections.
+4. [x] Run all local deterministic, ancestry, scope, and clean-browser gates.
+5. [x] Update this document with the exact dependency commit and verified evidence. Change the
+   status to **Review ready — host acceptance pending**.
+6. [ ] Do not change `feedback.md` to **Accepted**. An independent reviewer owns that verdict.
+7. [ ] Commit and push the parent WIP branch, then hand the exact commits and evidence to the
+   reviewer. Do not merge the WIP branch to parent `main` in the implementation turn.
 
-The existing [`docs/orbot-llm-wiki-implementation-plan.md`](docs/orbot-llm-wiki-implementation-plan.md)
-should not be executed verbatim. At minimum, later implementation planning must address:
+## Exit gate — local deterministic gates closed
 
-- one coherent metadata vocabulary for lifecycle, verification, audience, knowledge tier,
-  and retrieval exclusion;
-- source authority that distinguishes a version-stamped description from an
-  engineer-confirmed deployed build;
-- machine-readable procedure- or section-level safety metadata propagated to chunks,
-  with missing or unknown classifications failing closed;
-- consistent safety filtering across every exposed retrieval tool;
-- database migration or intentional rebuild behavior when embedding dimensions change;
-- namespaced document identity, deletion reconciliation, and stale-index prevention;
-- the gap between the promised hybrid/canonical-first retrieval model and current
-  vector-only code;
-- chunk overlap without corrupting full-document retrieval;
-- correct sibling/submodule paths and durable Hermes configuration provisioning;
-- deterministic automated tests rather than relying on random synthetic embeddings;
-- explicit Ollama readiness and model-warmup ordering;
-- a reproducibly pinned documentation frontend, deterministic canonical-content
-  exclusion, and strict documentation validation.
+The Quill dependency commit `1057eae` on `codex/orbot-repository-mode-recovery`:
+- Is based on approved `6d51479` (ancestry gate: PASS)
+- Excludes Git-status PR #7 ancestry (forbidden ancestors: PASS)
+- Bounded to `writer/app.js` + test file (scope gate: PASS)
+- All 141 tests pass, typecheck clean, syntax clean
+- Full-hierarchy regression covers all 6 review areas + root + exclusions
+- Real init() tests prove repo-start works without narrative data or flash
+- Recovery branch pushed, parent gitlink updated, worktree reconstructable
 
-Some of these belong to later hardening tiers. The roadmap should place them deliberately
-rather than allowing the MVP to claim safety or completeness that has not been verified.
+**Remaining host gates** (not yet verified — see "Mandatory clean-browser acceptance"):
+- Deployment-host Docker image/build, read-only mount, restart
+- Real browser test: no narrative flash, populated tree, readable documents
+- No Changes tab, no Git-status endpoint
+- PUT returns `403 READ_ONLY`
+- MkDocs regression
+- Engineering lead usability approval
 
-## Files to read, in order
-
-1. [`docs/vision/VISION.md`](docs/vision/VISION.md) — approved product north star.
-2. [`docs/vision/VISION_FEEDBACK.md`](docs/vision/VISION_FEEDBACK.md) — owner refinements
-   and real-corpus findings already reconciled into the vision.
-3. [`CURRENT_TASK.md`](CURRENT_TASK.md) — this active handoff.
-4. [`docs/orbot-llm-wiki-product-proposal.md`](docs/orbot-llm-wiki-product-proposal.md) —
-   detailed knowledge-system proposal; supporting material, not final authority.
-5. [`docs/orbot-llm-wiki-implementation-plan.md`](docs/orbot-llm-wiki-implementation-plan.md)
-   — earlier implementation plan requiring revision.
-6. [`architecture.md`](architecture.md), [`deployment-plan.md`](deployment-plan.md), and
-   [`BUILD-KIT.md`](BUILD-KIT.md) — current deployment truth that must be reconciled with
-   the product roadmap.
-
-## Immediate next action
-
-The bounded read-only Quill integration is implemented and locally verified. Submodule
-changes are committed and pushed. The next step is deployment-host verification: build
-the containers, prove canonical-only navigation, safe read-only behavior, relative
-links/assets, source refresh, restart reconstruction, and no host-path disclosure on the
-deployment host (requires Docker). Keep MkDocs available as fallback until that gate
-passes. Do not begin Quill editing, Git review, retrieval, or content-promotion
-implementation in the same slice.
+Only an independent review may mark the slice accepted or recommend merging it to parent `main`.

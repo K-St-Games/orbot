@@ -45,7 +45,9 @@ services:
   # Intended replacement for the MkDocs-based wiki-site. Read-only mode is
   # enabled by default — the hi-orbit-wiki bind mount is read-only at the OS
   # level, and QUILL_READ_ONLY=true makes the API reject writes explicitly.
-  # Only the reviewed canonical docs/ tree is exposed through content.root: docs.
+  # The engineering-review slice exposes the full useful wiki hierarchy through
+  # content.root: . (docs, drafts, evidence, meta, repairs, templates). MkDocs
+  # remains restricted to canonical docs/.
   # See vendor/kst-beta-ide/ for the pinned Quill source dependency.
 
   quill-api:
