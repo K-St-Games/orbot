@@ -1,0 +1,8 @@
+FROM nginx:alpine
+
+COPY single-compose/nginx.orbot-quill.conf /etc/nginx/nginx.conf
+COPY vendor/kst-beta-ide/writer/ /usr/share/nginx/html/writer/
+
+EXPOSE 8080
+
+CMD ["nginx", "-g", "daemon off;"]

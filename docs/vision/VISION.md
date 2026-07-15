@@ -2,7 +2,7 @@
 
 **Status:** Approved in direction — reconciled after owner review
 
-**Last updated:** 2026-07-12
+**Last updated:** 2026-07-15
 
 **Scope:** Durable product direction for Orbot and its first deployment at Hi-Orbit
 
@@ -213,11 +213,16 @@ For the MVP, the private GitHub repository itself is an acceptable documentation
 interface. GitHub provides private access, history, review, and Markdown rendering
 without requiring Orbot to build an authentication system.
 
-MkDocs validates and renders the current private documentation frontend. The Git
-repository remains the source of truth, and the generated static site contains only the
-reviewed canonical `docs/` tree. Host networking and access controls remain deployment
-responsibilities; sensitive service information must not be exposed through an
-unauthenticated public site.
+Quill is the intended private documentation workspace and frontend. The Git repository
+remains the source of truth. Quill must preserve ordinary Markdown, frontmatter, and
+relative links while making only the reviewed canonical `docs/` tree normal
+operator-facing content. Initial integration is read-only; authoring and Git-review
+capabilities become eligible only after their safety, review, and operational boundaries
+are deliberately approved.
+
+MkDocs remains a temporary static fallback during that work. Host networking and access
+controls remain deployment responsibilities; sensitive service information must not be
+exposed through an unauthenticated public site.
 
 ### Engineers curate canonical knowledge through Git
 

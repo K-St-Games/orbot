@@ -1,19 +1,60 @@
 # Current Task
 
-**Status:** In progress — roadmap review and private wiki host smoke test
+**Status:** In progress — first read-only Quill integration slice implemented; submodule changes committed and pushed; awaiting deployment-host verification
 
-**Last updated:** 2026-07-12
+**Last updated:** 2026-07-15
 
 **Owner:** Human owner and engineering lead, with the next agent applying review feedback
 
 ## Objective
 
-Review and approve root [`MVP_ROADMAP.md`](MVP_ROADMAP.md). Apply owner and engineering-lead
-feedback before implementation begins, then set Tier 0 as the active bounded task.
+Integrate Quill as Orbot's intended documentation workspace and frontend, beginning with a
+read-only proof against the real `hi-orbit-wiki` checkout. The first slice must prove the
+dependency, container, repository-discovery, and canonical-content boundaries without
+adding retrieval, Git mutation, or a second knowledge authority.
 
-Do not begin the existing wiki/Cortex implementation plan unchanged. Its product direction
-is useful, but the live-repo review identified contract, migration, path, and verification
-issues that must be accounted for in the roadmap and the next implementation slice.
+The roadmap remains the authority for Orbot product work. Do not begin the existing
+wiki/Cortex implementation plan unchanged, and do not remove the working MkDocs fallback
+until Quill has passed its integration gate.
+
+## Approved dependency baseline
+
+Quill remains owned by the private
+[`K-St-Games/kst-beta-ide`](https://github.com/K-St-Games/kst-beta-ide) repository rather
+than this repository. The initial integration baseline is merge commit
+[`f68503f`](https://github.com/K-St-Games/kst-beta-ide/commit/f68503fd1bd455e42b70bfb1c87bf51a72d251df),
+merged and browser-tested by the owner on 2026-07-14. It contains the static Quill UI,
+Node/Hono API, repository discovery, safe Markdown/asset reads, conditional atomic writes,
+conflict handling, Dockerfiles, Compose topology, and the production browser adapter.
+
+The upstream handoff at that commit still says Tier 1 integrated acceptance is pending.
+The owner's browser test is sufficient to begin this bounded Orbot integration, but the
+upstream acceptance record should be reconciled in the Quill repository separately.
+
+Because Quill is not yet a dedicated repository, package, or published image, the first
+Orbot implementation should add the complete KSt Beta IDE repository as a temporary source
+submodule under `vendor/kst-beta-ide`, pinned to the exact approved commit. Do not copy
+`writer/` into Orbot, follow a moving branch, or depend on the developer's CloudDocs path.
+Replace the temporary full-repository dependency with a dedicated Quill repository or
+published image when one exists.
+
+Do not deploy the upstream KSt Beta IDE web image unchanged: its Dockerfile contains the
+whole Beta IDE surface and its own authentication assets. Orbot should own a minimal
+Quill-web image/proxy that serves only the required `writer/` assets and API route. The
+Quill API image may be built from the pinned upstream `Dockerfile.quill-api`.
+
+The first Orbot integration gate is intentionally read-only: Quill must discover an
+explicitly configured `hi-orbit-wiki` checkout, render only the reviewed canonical `docs/`
+tree for ordinary use, preserve Markdown/frontmatter and relative links, and keep drafts,
+evidence, repairs, and metadata from becoming normal operator-facing content. Editing,
+Git mutation, retrieval, Drive automation, and repair writeback remain out of scope for
+this gate.
+
+The approved Quill baseline exposes an Editor and `PUT` route but has no explicit read-only
+runtime mode. The integration must therefore add or consume a Quill read-only capability
+that both hides/disables editing in the browser and returns a deliberate `403 READ_ONLY`
+for writes. A read-only bind mount remains the OS-level enforcement; a failed filesystem
+write presented as a generic server error does not satisfy the gate.
 
 ## Current deliverables
 
@@ -28,10 +69,27 @@ issues that must be accounted for in the roadmap and the next implementation sli
 - [x] Normalize the wiki repository name to `hi-orbit-wiki`.
 - [x] Draft root [`MVP_ROADMAP.md`](MVP_ROADMAP.md) from the approved vision and owner
   clarifications.
+- [x] Select Quill as the intended documentation frontend and review the merged,
+  owner-browser-tested `f68503f` baseline.
+- [x] Add the pinned temporary Quill source dependency under `vendor/kst-beta-ide`.
+- [x] Add a minimal `quill.yml` to `hi-orbit-wiki` with `content.root: docs`.
+- [x] Add Orbot-owned Quill web/API deployment wiring with the wiki mounted read-only.
+- [x] Add read-only mode to the Quill API (`QUILL_READ_ONLY` env var, `403 READ_ONLY` on PUT
+      before any request processing, `readOnly: true` in repository list).
+- [x] Add read-only mode to the Quill frontend (hide editor tab, disable textarea,
+      hide Save button, show RO badge and read-only banner).
+- [x] Read-only API contract tests pass (3 focused probes: metadata, well-formed PUT,
+      malformed PUT, all return `403 READ_ONLY`).
+- [x] `npm test` passes (135/135) and `npm run typecheck` passes.
+- [x] Submodule changes committed and pushed to both `hi-orbit-wiki` and `kst-beta-ide`.
+- [x] Parent gitlinks updated to recorded submodule commits.
+- [ ] Prove canonical-only navigation, safe read-only behavior, relative links/assets,
+  source refresh, restart reconstruction, and no host-path disclosure on the deployment
+  host.
 - [ ] Human owner and engineering lead review and approve or revise the roadmap.
 - [ ] Schedule remaining README, SOUL, architecture, deployment-plan, and build-kit
   reconciliation in the appropriate roadmap tier.
-- [ ] Select and write the first bounded implementation task.
+- [x] Select and write the first bounded implementation task.
 
 ## Product decisions established
 
@@ -137,16 +195,21 @@ Every tier should identify:
 - Root `AGENTS.md` now reflects the approved product phase. README, SOUL, architecture,
   deployment-plan, and BUILD-KIT still contain older deployment-only framing and should be
   reconciled in the roadmap before they are treated as current product authority.
-- A private MkDocs frontend now builds only the wiki's reviewed canonical `docs/` tree and
-  runs as `wiki-site` in `single-compose`, exposed on host port 8120 by default. The current
-  canonical tree contains only its placeholder index; all installation articles remain
-  unreviewed drafts.
+- A private MkDocs frontend builds only the wiki's reviewed canonical `docs/` tree and runs
+  as `wiki-site` in `single-compose`, exposed on host port 8120 by default. It is a working
+  fallback, not the intended long-term documentation frontend. The current canonical tree
+  contains only its placeholder index; all installation articles remain unreviewed drafts.
 - The wiki templates and root authoring templates now share metadata schema v0.1. Existing
   article drafts predate that schema and must be reconciled before review or promotion.
 - The canonical MkDocs tree passes a strict local build with pinned Material for MkDocs
   9.7.6. Docker remains unavailable in this development checkout, so the image build,
   resolved Compose configuration, HTTP response, and container logs require validation
-  on the deployment host before the frontend is considered operational.
+  on the deployment host before the fallback frontend is considered operational.
+- Quill source is present at `vendor/kst-beta-ide` pinned to commit `cae70e8` (upstream
+  `f68503f` plus the Orbot read-only integration changes). The upstream `kst-beta-ide`
+  repository has been updated to include these changes. `hi-orbit-wiki/quill.yml` is
+  committed and pushed. Both submodules are clean and reconstructable from source:
+  `git submodule update --init --recursive` reproduces the full integration.
 
 ## Findings the roadmap must absorb
 
@@ -168,7 +231,8 @@ should not be executed verbatim. At minimum, later implementation planning must 
 - correct sibling/submodule paths and durable Hermes configuration provisioning;
 - deterministic automated tests rather than relying on random synthetic embeddings;
 - explicit Ollama readiness and model-warmup ordering;
-- reproducible MkDocs dependencies and strict documentation validation.
+- a reproducibly pinned documentation frontend, deterministic canonical-content
+  exclusion, and strict documentation validation.
 
 Some of these belong to later hardening tiers. The roadmap should place them deliberately
 rather than allowing the MVP to claim safety or completeness that has not been verified.
@@ -189,7 +253,10 @@ rather than allowing the MVP to claim safety or completeness that has not been v
 
 ## Immediate next action
 
-On the deployment host, pull the parent repository and its recorded wiki submodule,
-validate the Compose configuration, build and start `wiki-site`, and confirm its HTTP
-response and logs. Then resume review of root `MVP_ROADMAP.md`; do not begin retrieval or
-content-promotion implementation until the owner and engineering lead approve its gates.
+The bounded read-only Quill integration is implemented and locally verified. Submodule
+changes are committed and pushed. The next step is deployment-host verification: build
+the containers, prove canonical-only navigation, safe read-only behavior, relative
+links/assets, source refresh, restart reconstruction, and no host-path disclosure on the
+deployment host (requires Docker). Keep MkDocs available as fallback until that gate
+passes. Do not begin Quill editing, Git review, retrieval, or content-promotion
+implementation in the same slice.

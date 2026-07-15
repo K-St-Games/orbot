@@ -1,3 +1,6 @@
 [submodule "hi-orbit-wiki"]
 	path = hi-orbit-wiki
 	url = https://github.com/K-St-Games/hi-orbit-wiki.git
+[submodule "vendor/kst-beta-ide"]
+	path = vendor/kst-beta-ide
+	url = https://github.com/K-St-Games/kst-beta-ide.git

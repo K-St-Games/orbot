@@ -2,7 +2,7 @@
 
 **Status:** Draft for owner and engineering-lead review
 
-**Last updated:** 2026-07-12
+**Last updated:** 2026-07-15
 
 **Scope:** From the current repository state to dependable Hi-Orbit dogfooding through
 Discord and the private `hi-orbit-wiki` knowledge repository
@@ -62,7 +62,9 @@ These are means, not product requirements:
 - vector-only, keyword, or hybrid ranking;
 - Ollama or a different embedding provider;
 - the exact Markdown validation and ingestion packages;
-- MkDocs, the current PoC documentation frontend, or a future replacement.
+- the documentation frontend implementation. Quill is the intended replacement for the
+  temporary MkDocs fallback. Its source and runtime remain replaceable dependencies and
+  must satisfy the canonical-content and safety contracts.
 
 A replacement must beat the existing option against the roadmap contracts. Do not swap
 components merely because another package exists.
@@ -100,6 +102,9 @@ inventing incompatible metadata and safety behavior.
 - Define the exact machine-readable syntax for procedure- or section-level safety.
 - Define how draft, current, superseded, disputed, and deployment-verified content move
   through GitHub review.
+- Prove the initial read-only Quill integration against `hi-orbit-wiki`: pin the dependency,
+  configure `content.root: docs`, isolate the browser/API deployment surface, mount the
+  wiki read-only, and test that noncanonical trees and write routes are unavailable.
 
 ### Metadata schema v0 must distinguish
 
@@ -119,6 +124,7 @@ prove that build is installed. Missing or unknown safety classification fails cl
 
 - Retrieval-engine implementation.
 - Google Drive automation.
+- Quill editing, Git review, or file-management capabilities.
 - Custom authentication or roles.
 - Finalizing repair/ticket workflow.
 - Generating the full article corpus.
@@ -134,12 +140,22 @@ prove that build is installed. Missing or unknown safety classification fails cl
   safety classification.
 - A deterministic validator can distinguish valid and invalid fixtures once the schema is
   implemented.
+- The Quill dependency resolves to the recorded reviewed commit rather than a moving
+  branch or developer-local path.
+- Quill discovers the wiki through `quill.yml`, and its tree and document endpoints expose
+  only content beneath canonical `docs/`; requests for drafts, evidence, repairs, metadata,
+  traversal paths, and host paths fail safely.
+- The first deployment offers no editor and rejects write requests explicitly while the
+  wiki bind mount remains read-only at the operating-system boundary.
+- Pulling canonical content is visible after refresh without rebuilding Quill, and a clean
+  restart reconstructs the same tree from files.
 
 ### Human gate and exit
 
 The owner approves `MVP_ROADMAP.md`. An engineering reviewer agrees that the schema and
-safety vocabulary are understandable enough to review real articles. Tier 1 may then
-begin.
+safety vocabulary are understandable enough to review real articles. The owner confirms
+that Quill can navigate the canonical wiki without exposing noncanonical content or write
+capability. Tier 1 may then begin.
 
 ---
 

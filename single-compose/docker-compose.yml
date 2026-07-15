@@ -41,6 +41,51 @@ services:
     cap_drop:
       - ALL
 
+  # ── Quill documentation frontend ───────────────────────────────────────────
+  # Intended replacement for the MkDocs-based wiki-site. Read-only mode is
+  # enabled by default — the hi-orbit-wiki bind mount is read-only at the OS
+  # level, and QUILL_READ_ONLY=true makes the API reject writes explicitly.
+  # Only the reviewed canonical docs/ tree is exposed through content.root: docs.
+  # See vendor/kst-beta-ide/ for the pinned Quill source dependency.
+
+  quill-api:
+    build:
+      context: ../vendor/kst-beta-ide
+      dockerfile: Dockerfile.quill-api
+    image: ${QUILL_API_IMAGE:-orbot-quill-api:local}
+    container_name: ${COMPOSE_PROJECT_NAME:-orbot}-quill-api
+    restart: unless-stopped
+    expose:
+      - 3001
+    environment:
+      QUILL_REPOS_ROOT: /workspace/repos
+      QUILL_READ_ONLY: "true"
+    volumes:
+      # Mount the wiki read-only — OS-level enforcement plus API-level rejection
+      - type: bind
+        source: ../hi-orbit-wiki
+        target: /workspace/repos/hi-orbit-wiki
+        read_only: true
+
+  quill-web:
+    build:
+      context: ..
+      dockerfile: single-compose/Dockerfile.orbot-quill-web
+    image: ${QUILL_WEB_IMAGE:-orbot-quill-web:local}
+    container_name: ${COMPOSE_PROJECT_NAME:-orbot}-quill-web
+    restart: unless-stopped
+    depends_on:
+      - quill-api
+    ports:
+      - "${QUILL_WEB_PORT:-8121}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
   # ── Google Drive FUSE mount ────────────────────────────────────────────────
   rclone-gdrive:
     image: rclone/rclone:latest

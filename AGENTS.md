@@ -7,10 +7,15 @@ for surfacing that knowledge.
 
 ## Current phase
 
-The product vision is approved in direction and grounded by real Hi-Orbit corpus samples.
-The next major artifact is the tiered [`MVP_ROADMAP.md`](MVP_ROADMAP.md). Do not execute the older wiki/Cortex
+The product vision and tiered roadmap are approved in direction and grounded by real
+Hi-Orbit corpus samples. The active bounded slice is the first read-only Quill dependency
+integration described in [`CURRENT_TASK.md`](CURRENT_TASK.md), starting from the approved
+`K-St-Games/kst-beta-ide@f68503f` baseline. Do not execute the older wiki/Cortex
 implementation plan verbatim or resume the previous deployment-only "get it running"
 mode without first reconciling the task against the vision and roadmap.
+
+Keep the MkDocs service as a fallback until the Quill integration gate passes. Do not add
+Quill editing, Git review, retrieval, Drive automation, or repair writeback to this slice.
 
 Complexity must be earned by observed usage. Build the smallest trustworthy vertical
 slice, verify it with real material, and defer speculative product infrastructure.
@@ -34,6 +39,7 @@ Read these in order before making product, architecture, or planning changes:
 |---|---|
 | [`docs/vision/`](docs/vision/) | Product vision, feedback, prototypes, and content-model design. |
 | [`hi-orbit-wiki/`](hi-orbit-wiki/) | Independently versioned Hi-Orbit knowledge repository, linked as a submodule. |
+| `vendor/kst-beta-ide/` | Temporary pinned source dependency for Quill; add as a submodule at the exact commit in `CURRENT_TASK.md`. |
 | [`cortex/`](cortex/) | Vendored retrieval starting point; not yet aligned with the approved product contracts. |
 | [`single-compose/`](single-compose/) | Current Hermes/rclone deployment scaffold and runtime integration. |
 | [`example_breakdowns/`](example_breakdowns/) | Real corpus samples for design and testing, not the operational corpus. |
@@ -84,6 +90,11 @@ be deferred:
   gateway, Cortex, or Postgres to a venue network. Use localhost or a private network.
 - Preserve the wiki submodule boundary. Commit knowledge changes inside
   `hi-orbit-wiki/`, push them there, then update the parent gitlink deliberately.
+- Treat Quill as an external pinned dependency. Do not copy `writer/` into Orbot, follow a
+  moving upstream branch, or deploy the upstream full Beta IDE web image unchanged.
+- For the first Quill gate, configure the wiki with `content.root: docs`, mount it
+  read-only into the Quill API only, disable the browser editor, and make write requests
+  fail explicitly as read-only rather than as generic filesystem errors.
 - A human-gated step requires the human's secret, approval, source material, or operational
   verification. Ask rather than guessing.
 
