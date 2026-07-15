@@ -79,7 +79,7 @@ services:
     depends_on:
       - quill-api
     ports:
-      - "${QUILL_WEB_PORT:-8121}:8080"
+      - "${QUILL_WEB_PORT:-8080}:8080"
     read_only: true
     tmpfs:
       - /tmp
